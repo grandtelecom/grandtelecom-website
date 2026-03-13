@@ -1,0 +1,1979 @@
+<!DOCTYPE html>
+<html lang="az" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>İdarə Paneli - Grand Telecom</title>
+    
+    <!-- CSS faylları -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/toast.css">
+    <!-- Removed external font CDNs (Font Awesome, Vazirmatn) to avoid CORS during local dev. -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- JavaScript Kitabxanaları -->
+    <!-- JavaScript Kitabxanaları -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <!-- CONFIG qlobal obyektini və məzmun idarəetmə skriptlərini əlavə edirik -->
+    <script src="js/config.js?v=4"></script>
+    <!-- Make CONFIG available globally (CONFIG already attached in config.js) -->
+    <script>
+        window.CONFIG = window.CONFIG || CONFIG || {};
+    </script>
+    <!-- Suppress noisy extension-related errors in local dev (JetBrains/Chrome) -->
+    <script>
+      (function(){
+        try {
+          const origErr = console.error;
+          const origOnError = window.onerror;
+          console.error = function(){
+            const msg = Array.from(arguments).join(' ');
+            if (msg && (msg.includes('runtime.lastError') || msg.includes('message port closed') || msg.includes('Extension context') || msg.includes('chrome-extension://'))) { return; }
+            return origErr.apply(console, arguments);
+          };
+          window.addEventListener('unhandledrejection', function(ev){
+            const m = ev.reason?.message || String(ev.reason||'');
+            if (m && (m.includes('Extension context') || m.includes('chrome-extension://'))) { ev.preventDefault(); }
+          });
+          window.onerror = function(message, source, lineno, colno, error){
+            const m = String(message||'');
+            if (m && (m.includes('runtime.lastError') || m.includes('message port closed') || m.includes('Extension context') || m.includes('chrome-extension://'))) { return true; }
+            if (typeof origOnError === 'function') { return origOnError.apply(this, arguments); }
+            return false;
+          };
+        } catch(_){ /* ignore */ }
+      })();
+    </script>
+    <!-- API Client (module) -->
+    <script type="module" src="js/apiClient.js"></script>
+    <!-- Qlobal apiClient instansiyası (admin.js-dən ƏVVƏL) -->
+    <script>
+        (function(){
+            try {
+                // CONFIG.API_BASE_URL həmişə /api ilə bitir, bazanı çıxarıb yenidən /api əlavə edirik
+                var base = (window.CONFIG && window.CONFIG.API_BASE_URL) ? window.CONFIG.API_BASE_URL.replace(/\/api$/, '') + '/api' : 'http://localhost:3001/api';
+                if (window.ApiClient && !window.apiClient) {
+                    window.apiClient = new window.ApiClient(base);
+                    // Keyboard accessibility
+                    var avatarBtn = document.getElementById('avatarBtn');
+                    if (avatarBtn) {
+                        avatarBtn.setAttribute('tabindex', '0');
+                        avatarBtn.addEventListener('keydown', function(e){
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                avatarBtn.click();
+                            }
+                        });
+                    }
+                }
+            } catch (e) { console.warn('apiClient init warning:', e); }
+        })();
+    </script>
+    <script src="js/admin.js?ver=1.3" defer></script>
+    <script type="module" src="js/admin-content.js?v=4"></script>
+    <style>
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Vazirmatn', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+            text-align: left;
+            direction: ltr;
+        }
+        
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+        
+        /* Header */
+        .admin-header {
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .admin-header nav {
+            max-width: 1200px; /* bir az daha dar konteyner: mərkəzə yaxın */
+            width: 100%;
+            margin: 0 auto; /* ortala */
+            padding: 8px 16px 8px 12px !important; /* daha rahat header hündürlüyü üçün */
+            display: flex;
+            justify-content: space-between; /* logo və menyu arası balanslı */
+            align-items: center;
+        }
+
+        .admin-header .logo {
+            display: flex;
+            align-items: center;
+            gap: 2px; /* iki loqo daha yaxın */
+            margin-left: 0 !important;
+            margin-right: 0; /* artıq sağa doğru itələməsin */
+        }
+
+        .admin-header .admin-menu {
+            display: flex;
+            gap: 6px; /* menyu elementləri bir az daha yaxın */
+            margin-left: 0; /* artıq aşırı sağa itələmə */
+        }
+        .admin-header .logo img { height: 26px !important; display: block; } /* default: Best2.svg və digərləri */
+        .admin-header .logo img:first-child { height: 36px !important; } /* yalnız Best1.svg böyüdülüb */
+
+        .admin-header .admin-menu a {
+            padding: 5px 8px !important;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px !important;
+            text-decoration: none;
+            color: #444;
+            font-size: 12.5px !important;
+            line-height: 1;
+        }
+        
+        .admin-header .admin-menu a:hover {
+            background-color: #f0f2f5;
+            transform: translateY(-2px);
+        }
+
+        /* Duplicate rule simplified and namespaced to header to prevent overrides */
+        .admin-header .admin-menu a {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .admin-header .admin-menu a i {
+            width: 16px;
+            min-width: 16px;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1;
+        }
+        
+        .admin-header .admin-menu a.active {
+            background-color: #1976D2;
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+        }
+        
+        .admin-header .admin-menu a:hover:not(.active) {
+            background-color: #e3f2fd;
+            color: #1976D2;
+            transform: translateY(-1px);
+        }
+        
+        .admin-menu a.logout-btn {
+            color: #e53935;
+        }
+        
+        .admin-menu a.logout-btn:hover {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .admin-container {
+            max-width: 1400px;
+            margin: 64px auto 0;
+            padding: 16px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .main-content {
+            flex: 1;
+            background: #fff;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Bölüm başlıqlarında vahid aralıqlar */
+        .tab-content > h2 {
+            font-size: 18px;
+            margin: 0 0 6px 0; /* bölüm adlarını daha da yaxınlaşdırdıq */
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .form-group {
+            margin-bottom: 10px; /* bölmələr arasında boşluğu daha da azaltdıq */
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        /* Spacing between buttons inside tab contents */
+        .tab-content .btn {
+            margin-right: 8px;
+            margin-bottom: 6px;
+        }
+        .tab-content .btn:last-child { margin-right: 0; }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+            color: white;
+            margin-right: 10px;
+        }
+
+        .btn-secondary:hover {
+            background-color: #7f8c8d;
+        }
+
+        .image-upload {
+            border: 2px dashed #ddd;
+            border-radius: 4px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+            cursor: pointer;
+        }
+
+        .image-upload:hover {
+            border-color: #3498db;
+        }
+
+        .image-preview {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .image-preview img {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .plan-card {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 6px;
+            margin: 4px;
+            background: #f9f9f9;
+            flex: 1;
+            min-width: 200px;
+            max-width: 240px;
+        }
+
+        #plans-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 10px 0;
+            justify-content: flex-start;
+        }
+
+        .plan-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .plan-header h4 {
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .plan-header h4 {
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .remove-plan {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 3px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+
+        .remove-plan:hover {
+            background: #c0392b;
+        }
+
+        .plan-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+
+        .plan-row.price-row {
+            grid-template-columns: 2fr 1fr;
+        }
+
+        .plan-row.single {
+            grid-template-columns: 1fr;
+        }
+
+        .plan-card .form-control {
+            padding: 3px 5px;
+            font-size: 11px;
+            margin-bottom: 4px;
+            height: 26px;
+        }
+
+        .plan-card label {
+            font-size: 10px;
+            margin-bottom: 1px;
+            font-weight: 500;
+            line-height: 1.1;
+        }
+
+        .features-list {
+            margin-top: 6px;
+        }
+
+        .feature-item {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 3px;
+        }
+
+        .feature-item input {
+            font-size: 10px;
+            padding: 2px 4px;
+            height: 22px;
+        }
+
+        .feature-item input {
+            flex: 1;
+        }
+
+        .remove-feature {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .add-feature {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 6px;
+            font-size: 11px;
+        }
+
+        .alert {
+            padding: 12px;
+            margin: 12px 0;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+
+        .alert-info {
+            color: #31708f;
+            background-color: #d9edf7;
+            border-color: #bce8f1;
+        }
+
+        .image-upload-section {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 8px 0;
+        }
+
+        .image-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .alert-message-section {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 10px 0;
+            background: #f9f9f9;
+        }
+
+        .alert-preview {
+            font-weight: bold;
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+
+        .alert-preview.warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+
+        .alert-preview.danger {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .alert-preview.info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        /* Users table styles */
+        #users-table th {
+            white-space: nowrap;
+            vertical-align: middle;
+            padding: 12px 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            color: #6c757d;
+        }
+        
+        #users-table td {
+            vertical-align: middle;
+            padding: 12px 15px;
+        }
+        
+        #users-table .badge {
+            font-weight: 500;
+            padding: 5px 8px;
+            font-size: 0.75rem;
+        }
+        
+        #users-table .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            line-height: 1.5;
+            border-radius: 0.2rem;
+        }
+        
+        .table-hover tbody tr:hover {
+            background-color: rgba(0, 0, 0, 0.02);
+        }
+
+        .alert-preview.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .ql-toolbar {
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+        }
+
+        .ql-container {
+            border-bottom-left-radius: 4px;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* Remove Quill picker dropdown SVG arrows completely */
+        .ql-toolbar .ql-picker-label svg { display: none !important; }
+
+    </style>
+</head>
+<body>
+    <!-- Əsas JavaScript faylları -->
+    
+    <!-- Quill redaktoru üçün script -->
+    <script>
+    // Quill redaktorunu yalnız lazım olduqda yüklə
+    if (typeof window.quillInitialized === 'undefined') {
+    window.quillInitialized = true;
+    document.addEventListener('DOMContentLoaded', function() {
+        const initQuill = function() {
+            const editorElement = document.querySelector('#about-content-editor');
+            if (editorElement) {
+                try {
+                    const quill = new Quill(editorElement, {
+                        theme: 'snow',
+                        modules: {
+                            toolbar: [
+                                [{ 'header': [1, 2, 3, false] }],
+                                ['bold', 'italic', 'underline', 'strike'],
+                                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                                ['link', 'image'],
+                                ['clean']
+                            ]
+                        },
+                        placeholder: 'Məzmunu daxil edin...',
+                    });
+                    console.log('Quill redaktoru uğurla yükləndi');
+                    return quill;
+                } catch (e) {
+                    console.error('Quill redaktoru yüklənərkən xəta:', e);
+                    return null;
+                }
+            }
+            return null;
+        };
+
+        // Quill-i yüklə
+        const quill = initQuill();
+    });
+    }
+    </script>
+    <!-- Header -->
+    <header class="admin-header">
+        <nav style="display: flex; justify-content: space-between; align-items: center; padding: 0 20px; background: #f8f9fa; height: 60px;">
+            <div class="logo" onclick="window.location.href='index.html'" style="cursor: pointer; display: flex; align-items: center;">
+                <img src="Best1.svg" alt="Grand Telecom Logo 1" style="height: 36px;">
+                <img src="Best2.svg" alt="Grand Telecom Logo 2" style="height: 24px; margin-left: 8px;">
+            </div>
+            
+            <div style="flex-grow: 1; display: flex; justify-content: center;">
+                <ul class="nav-menu" style="display: flex; list-style: none; margin: 0; padding: 0; gap: 10px;">
+                    <li class="nav-item">
+                        <a href="#dashboard" class="nav-link active" data-tab="dashboard" 
+                           style="padding: 10px 20px; border-radius: 4px; color: #333; text-decoration: none; transition: all 0.3s ease;">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#about" class="nav-link" data-tab="about"
+                           style="padding: 10px 20px; border-radius: 4px; color: #333; text-decoration: none; transition: all 0.3s ease;">Haqqımızda</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#services" class="nav-link" data-tab="services"
+                           style="padding: 10px 20px; border-radius: 4px; color: #333; text-decoration: none; transition: all 0.3s ease;">Xidmətlər</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#tariffs" class="nav-link" data-tab="tariffs"
+                           style="padding: 10px 20px; border-radius: 4px; color: #333; text-decoration: none; transition: all 0.3s ease;">Tariflər</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#posts" class="nav-link" data-tab="posts"
+                           style="padding: 10px 20px; border-radius: 4px; color: #333; text-decoration: none; transition: all 0.3s ease;">Xəbərlər</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#contact" class="nav-link" data-tab="contact"
+                           style="padding: 10px 20px; border-radius: 4px; color: #333; text-decoration: none; transition: all 0.3s ease;">Əlaqə</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#users" class="nav-link" data-tab="users" id="tab-users"
+                           style="padding: 10px 20px; border-radius: 4px; color: #333; text-decoration: none; transition: all 0.3s ease;">İstifadəçilər</a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="user-menu" style="display: flex; align-items: center; gap: 10px;"></div>
+            <style>
+                .user-avatar:hover {
+                    transform: scale(1.1);
+                }
+                .dropdown-item:hover {
+                    background-color: #f8f9fa;
+                }
+                .dropdown-item:active {
+                    background-color: #e9ecef;
+                }
+                /* Ensure long dropdown content scrolls within the panel */
+                #user-profile-dropdown {
+                    scrollbar-width: thin;
+                }
+                #user-profile-dropdown::-webkit-scrollbar {
+                    width: 8px;
+                }
+                #user-profile-dropdown::-webkit-scrollbar-thumb {
+                    background: #d0d4d9;
+                    border-radius: 8px;
+                }
+                /* Hide profile header and info list inside avatar dropdown */
+                #user-profile-dropdown .p-3.d-flex.align-items-center { display: none !important; }
+                #user-profile-dropdown #profile-info-section { display: none !important; }
+                
+                /* Aktiv bölüm üçün stil */
+                .nav-link.active {
+                    background-color: #1976D2 !important;
+                    color: white !important;
+                    font-weight: 600;
+                }
+                /* Hover effekti */
+                .nav-link:hover:not(.active) {
+                    background-color: #e3f2fd;
+                    color: #1976D2;
+                }
+                /* Nav itemlərin düzgün görünməsi üçün */
+                .nav-item {
+                    display: flex;
+                    align-items: center;
+                }
+                /* Nav linklərinin düzgün görünməsi üçün */
+                .nav-link {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 100px;
+                    text-align: center;
+                    height: 40px;
+                }
+                /* Avatar stili */
+                #user-avatar {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    background-color: #4a6cf7;
+                    color: white;
+                    font-weight: bold;
+                    font-size: 16px;
+                }
+            </style>
+        </nav>
+    </header>
+
+    
+            <!-- Əsas Səhifə İdarəetməsi -->
+        <div class="main-content">
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content">
+                <h2>Əsas Səhifə İdarəetməsi</h2>
+                
+                <!-- Image Requirements Info -->
+                <div class="alert alert-info">
+                    <h4>📋 Şəkil Tələbləri:</h4>
+                    <ul style="margin: 10px 0; padding-left: 20px;">
+                        <li><strong>Format:</strong> JPG, PNG, WebP</li>
+                        <li><strong>Ölçü:</strong> Maksimum 5MB</li>
+                        <li><strong>Tövsiyə edilən ölçülər:</strong> 1920x1080px (Full HD)</li>
+                        <li><strong>Minimum ölçülər:</strong> 1200x600px</li>
+                    </ul>
+                </div>
+
+                <form id="homepage-form">
+                    <div class="form-group">
+                        <label for="hero-title">Ana Başlıq</label>
+                        <input type="text" id="hero-title" class="form-control" placeholder="Ana səhifə başlığı">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="hero-subtitle">Alt Başlıq</label>
+                        <input type="text" id="hero-subtitle" class="form-control" placeholder="Alt başlıq">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="hero-description">Qısa Təsvir</label>
+                        <textarea id="hero-description" class="form-control" rows="3" placeholder="Qısa tanışlıq mətni..." style="resize: vertical;"></textarea>
+                    </div>
+                    
+                    
+
+                    <!-- Background Image Upload Section -->
+                    <div class="form-group">
+                        <label>Arxa Plan Şəkli</label>
+                        <div class="image-upload-section">
+                            <div class="image-upload" id="hero-bg-upload">
+                                <i class="fas fa-cloud-upload-alt" style="font-size: 24px; margin-bottom: 10px;"></i>
+                                <p>Arxa plan şəklini buraya sürükləyin və ya klik edin</p>
+                                <p style="font-size: 12px; color: #666;">JPG, PNG, WebP - Max 5MB - 1920x1080px tövsiyə edilir</p>
+                                <input type="file" id="hero-bg-input" accept="image/*" style="display: none;">
+                            </div>
+                            <div class="image-preview" id="hero-bg-preview">
+                                <i class="fas fa-image"></i>
+                                <p>Şəkil yüklənməyib</p>
+                            </div>
+                            <div class="image-actions" id="hero-bg-actions" style="display: none; margin-top: 10px;">
+                                <button type="button" class="btn btn-secondary" id="remove-hero-bg">
+                                    <i class="fas fa-trash"></i> Şəkli Sil
+                                </button>
+                                <input type="text" id="hero-bg-url" class="form-control" placeholder="Və ya şəkil URL daxil edin" style="margin-top: 10px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Alert/Warning Message Section -->
+                    <div class="form-group">
+                        <label>Xüsusi Xəbərdarlıq Mesajı</label>
+                        <div class="alert-message-section">
+                            <div class="form-row" style="display: flex; gap: 15px; margin-bottom: 10px;">
+                                <div style="flex: 1;">
+                                    <label for="alert-text">Xəbərdarlıq Mətni</label>
+                                    <input type="text" id="alert-text" class="form-control" placeholder="Vacib xəbərdarlıq mesajı">
+                                </div>
+                                <div style="width: 150px;">
+                                    <label for="alert-type">Xəbərdarlıq Tipi</label>
+                                    <select id="alert-type" class="form-control">
+                                        <option value="">Xəbərdarlıq yoxdur</option>
+                                        <option value="warning">⚠️ Xəbərdarlıq (Sarı)</option>
+                                        <option value="danger">🚨 Təcili (Qırmızı)</option>
+                                        <option value="info">ℹ️ Məlumat (Mavi)</option>
+                                        <option value="success">✅ Müvəffəqiyyət (Yaşıl)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="alert-preview" id="alert-preview" style="display: none; padding: 10px; border-radius: 4px; margin-top: 10px;">
+                                <span id="alert-preview-text"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hero Features Section -->
+                    <div class="form-group">
+                        <label>Hero Xüsusiyyətləri</label>
+                        <div class="hero-features-section">
+                            <div id="hero-features-list">
+                                <!-- Features will be loaded dynamically -->
+                            </div>
+                            <button type="button" class="btn btn-secondary" id="add-hero-feature" style="margin-top: 10px;">
+                                <i class="fas fa-plus"></i> Yeni Xüsusiyyət Əlavə Et
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="reset-homepage">İlkin vəziyyətə qaytar</button>
+                        <button type="submit" class="btn btn-primary">Yadda Saxla</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- About Tab -->
+            <div id="about" class="tab-content">
+                <h2>Haqqımızda</h2>
+                <form id="about-form">
+                    <div class="form-group">
+                        <label for="about-title">Başlıq</label>
+                        <input type="text" id="about-title" class="form-control" value="Grand Telecom Haqqında">
+                    </div>
+                    <div class="form-group">
+                        <label for="about-content">Məzmun</label>
+                        <textarea id="about-content" class="form-control" rows="6" placeholder="Qısa mətn..." style="resize: vertical;">Grand Telecom olaraq, sizə ən yüksək keyfiyyətli internet və rabitə xidmətləri təqdim edirik.</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="about-mission">Missiya</label>
+                        <textarea id="about-mission" class="form-control" rows="3" placeholder="Şirkətin missiyasını daxil edin"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="about-vision">Vizyon</label>
+                        <textarea id="about-vision" class="form-control" rows="3" placeholder="Şirkətin vizyonunu daxil edin"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="about-values-text">Dəyərlərimiz</label>
+                        <textarea id="about-values-text" class="form-control" rows="3" placeholder="Şirkətin dəyərlərini qısa şəkildə daxil edin"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Şəkil Yüklə</label>
+                        <div class="image-upload" id="about-image-upload">
+                            <i class="fas fa-cloud-upload-alt" style="font-size: 24px; margin-bottom: 10px;"></i>
+                            <p>Şəkli buraya sürükləyin və ya klik edin</p>
+                            <input type="file" id="about-image" accept="image/*" style="display: none;">
+                        </div>
+                        <div class="image-preview" id="about-image-preview">
+                            <i class="fas fa-image"></i>
+                            <p>Şəkil yüklənməyib</p>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="reset-about">İlkin vəziyyətə qaytar</button>
+                        <button type="submit" class="btn btn-primary">Yadda Saxla</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Services Tab -->
+            <div id="services" class="tab-content">
+                <h2>Xidmətlər</h2>
+                <form id="services-form">
+                    <div class="form-group">
+                        <label for="services-title">Başlıq</label>
+                        <input type="text" id="services-title" class="form-control" placeholder="Xidmətlər başlığı">
+                    </div>
+                    <div class="form-group">
+                        <label for="services-subtitle">Alt Başlıq</label>
+                        <input type="text" id="services-subtitle" class="form-control" placeholder="Alt başlıq">
+                    </div>
+                    
+                    <div id="services-items">
+                        <h3>Xidmət Elementləri</h3>
+                        <div id="services-container">
+                            <!-- Services will be loaded here dynamically -->
+                        </div>
+                        <div style="display:flex; gap:8px; margin-top:8px;">
+                            <button type="button" class="btn btn-secondary" id="add-service">Yeni Xidmət Əlavə Et</button>
+                            <button type="button" class="btn btn-secondary" id="reset-services">İlkin vəziyyətə qaytar</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="reset-services-bottom">İlkin vəziyyətə qaytar</button>
+                        <button type="submit" class="btn btn-primary">Yadda Saxla</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Tariffs Tab -->
+            <div id="tariffs" class="tab-content">
+                <h2>Tariflər</h2>
+                <form id="tariffs-form">
+                    <div class="form-group">
+                        <label for="tariffs-title">Başlıq</label>
+                        <input type="text" id="tariffs-title" class="form-control" value="Tariflər">
+                    </div>
+                    <div class="form-group">
+                        <label for="tariffs-subtitle">Alt başlıq</label>
+                        <input type="text" id="tariffs-subtitle" class="form-control" value="Sizə uyğun tarifdən seçin">
+                    </div>
+                    
+                    <div id="tariff-plans">
+                        <h3>Tarif Planları</h3>
+                        <div id="plans-container">
+                            <!-- Plans will be loaded here dynamically -->
+                        </div>
+                        <button type="button" class="btn btn-secondary" id="add-plan">Yeni Plan Əlavə Et</button>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="reset-tariffs">İlkin vəziyyətə qaytar</button>
+                        <button type="submit" class="btn btn-primary">Yadda Saxla</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Posts Tab -->
+            <div id="posts" class="tab-content">
+                <h2>Xəbərlər</h2>
+                <p>Bu bölmədə xəbərləri idarə edə bilərsiniz.</p>
+                <div class="alert alert-info">
+                    <p>Xəbərlər bölməsi hazırlanır...</p>
+                </div>
+            </div>
+
+            <!-- Contact Tab -->
+            <div id="contact" class="tab-content">
+                <h2>Əlaqə Məlumatları</h2>
+                <form id="contact-form">
+                    <div class="form-group">
+                        <label for="contact-address">Ünvan</label>
+                        <input type="text" id="contact-address" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Telefon nömrələri</label>
+                        <div id="contact-phones-container"></div>
+                        <button type="button" class="btn btn-secondary" id="add-contact-phone" style="margin-top:8px;">
+                            Yeni nömrə əlavə et
+                        </button>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-email">Email</label>
+                        <input type="email" id="contact-email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="contact-hours">İş saatları</label>
+                        <input type="text" id="contact-hours" class="form-control">
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="reset-contact">İlkin vəziyyətə qaytar</button>
+                        <button type="submit" class="btn btn-primary">Yadda Saxla</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Profile Tab -->
+            <div id="profile" class="tab-content">
+                <h2>Profil Məlumatları</h2>
+                <div class="card" style="max-width: 600px; margin: 20px 0;">
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <h5 class="card-title">Profil məlumatları</h5>
+                            <div class="profile-info-item" style="padding: 15px 0; border-bottom: 1px solid #eee;">
+                                <div class="profile-info-label" style="font-weight: 600; color: #555; margin-bottom: 5px;">
+                                    <i class="fas fa-user-circle me-2"></i>Ad Soyad
+                                </div>
+                                <div id="profile-fullname-tab" class="profile-info-value" style="font-size: 16px; color: #333;">
+                                    Təyin edilməyib
+                                </div>
+                            </div>
+                            
+                            <div class="profile-info-item" style="padding: 15px 0; border-bottom: 1px solid #eee;">
+                                <div class="profile-info-label" style="font-weight: 600; color: #555; margin-bottom: 5px;">
+                                    <i class="fas fa-phone-alt me-2"></i>Əlaqə nömrəsi
+                                </div>
+                                <div id="profile-phone-tab" class="profile-info-value" style="font-size: 16px; color: #333;">
+                                    Təyin edilməyib
+                                </div>
+                            </div>
+                            
+                            <div class="profile-info-item" style="padding: 15px 0;">
+                                <div class="profile-info-label" style="font-weight: 600; color: #555; margin-bottom: 5px;">
+                                    <i class="fas fa-clock me-2"></i>Son giriş
+                                </div>
+                                <div id="last-login-tab" class="profile-info-value" style="font-size: 14px; color: #666;">
+                                    <i class="far fa-clock me-1"></i> Məlumat yoxdur
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <button id="edit-profile-btn-tab" class="btn btn-primary me-2">
+                                <i class="fas fa-edit me-1"></i> Profili redaktə et
+                            </button>
+                            <button id="change-password-btn-tab" class="btn btn-outline-secondary">
+                                <i class="fas fa-key me-1"></i> Şifrəni dəyiş
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Users (Super Admin) Tab -->
+            <div id="users" class="tab-content">
+                <h2>İstifadəçilər (Yalnız Super Admin)</h2>
+                <div id="users-warning" class="alert alert-info" style="display:none; margin-top:10px;">
+                    Bu funksionallıq üçün Node.js backend tələb olunur (http://localhost:3001). Hazırda PowerShell backend aktivdirsə, istifadəçi idarəetməsi işləməyə bilər.
+                </div>
+
+                <div class="form-group" style="margin-top:10px;">
+                    <label>Yeni istifadəçi yarat</label>
+                    <div class="form-row" style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px;">
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" id="new-user-firstname" class="form-control" placeholder="Ad" required>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" id="new-user-lastname" class="form-control" placeholder="Soyad" required>
+                        </div>
+                        <div style="flex: 1; min-width: 220px;">
+                            <input type="tel" id="new-user-phone" class="form-control" 
+                                   placeholder="Əlaqə nömrəsi (9 rəqəm, 0 ilə başlamamalıdır)" 
+                                   pattern="[1-9][0-9]{8}"
+                                   title="9 rəqəm daxil edin (0 ilə başlamamalıdır)"
+                                   maxlength="9"
+                                   inputmode="numeric"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 9)"
+                                   required>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="text" 
+                                   id="new-user-username" 
+                                   class="form-control" 
+                                   placeholder="İstifadəçi adı (ən az 1 hərf, rəqəm isə isteğə bağlıdır)"
+                                   pattern="^(?=.*[A-Za-z])[A-Za-z0-9]+"
+                                   title="Ən az 1 hərf daxil edin, rəqəmlər isteğə bağlıdır"
+                                   maxlength="20"
+                                   required>
+                            <div class="field-error"></div>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <input type="password" id="new-user-password" class="form-control" placeholder="Şifrə" required>
+                        </div>
+                        <div style="flex: 1; min-width: 200px;">
+                            <select id="new-user-role" class="form-control" required>
+                                <option value="" disabled selected>Rol seçin</option>
+                                <option value="Admin">Admin</option>
+                                <option value="PR">PR</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="SMM">SMM</option>
+                            </select>
+                        </div>
+                        <div style="flex: 0 0 auto;">
+                            <button type="button" id="create-user" class="btn btn-primary">
+                                <i class="fas fa-user-plus"></i> İstifadəçi Yarat
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0">Mövcud İstifadəçilər <span id="users-count" class="badge bg-primary ms-2">0</span></h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0" id="users-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>İstifadəçi adı</th>
+                                        <th>Ad Soyad</th>
+                                        <th>Əlaqə nömrəsi</th>
+                                        <th>Rolu</th>
+                                        <th>Status</th>
+                                        <th>Yaradılma tarixi</th>
+                                        <th>Əməliyyatlar</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="users-tbody">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-4">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Yüklənir...</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                        <div class="text-muted small">
+                            <span id="users-count">0</span> istifadəçi
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modern Şifrə Dəyişmə Modalı -->
+                <div class="modal fade" id="changePasswordModal" tabindex="-1" role="dialog" aria-labelledby="changePasswordModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title" id="changePasswordModalLabel">
+                                    <i class="fas fa-key me-2"></i>
+                                    Şifrəni dəyiş: <span id="modal-username" class="fw-bold"></span>
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Bağla"></button>
+                            </div>
+                            <div class="modal-body p-4">
+                                <form id="modal-password-form">
+                                    <div class="form-floating mb-3">
+                                        <input type="password" class="form-control" id="current-password" placeholder="Cari şifrə" autocomplete="current-password">
+                                        <label for="current-password">Cari şifrə</label>
+                                    </div>
+                                    <div class="form-floating mb-3">
+                                        <input type="password" class="form-control" id="new-password" placeholder="Yeni şifrə" autocomplete="new-password">
+                                        <label for="new-password">Yeni şifrə</label>
+                                        <div class="form-text">Ən azı 8 simvol, ən azı 1 böyük hərf və 1 rəqəm</div>
+                                    </div>
+                                    <div class="form-floating mb-2">
+                                        <input type="password" class="form-control" id="confirm-password" placeholder="Yeni şifrəni təsdiqlə" autocomplete="new-password">
+                                        <label for="confirm-password">Yeni şifrəni təsdiqlə</label>
+                                    </div>
+                                    <div id="password-match" class="text-danger small mb-3" style="display:none;"><i class="fas fa-exclamation-circle me-1"></i> Şifrələr uyğun gəlmir</div>
+
+                                    <!-- Şifrə gücü göstəricisi -->
+                                    <div class="password-strength mb-3">
+                                        <div class="progress" style="height: 5px;">
+                                            <div id="password-strength-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                        <small id="password-strength-text" class="form-text text-muted mt-1">Şifrə gücü: zəif</small>
+                                    </div>
+
+                                    <!-- Şifrə tələbləri -->
+                                    <div class="password-requirements">
+                                        <p class="small mb-2">Şifrə tələbləri:</p>
+                                        <ul class="list-unstyled small mb-0">
+                                            <li id="req-length" class="text-muted">
+                                                <i class="fas fa-circle me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>
+                                                Ən azı 8 simvol
+                                            </li>
+                                            <li id="req-uppercase" class="text-muted">
+                                                <i class="fas fa-circle me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>
+                                                Ən azı 1 böyük hərf
+                                            </li>
+                                            <li id="req-number" class="text-muted">
+                                                <i class="fas fa-circle me-1" style="font-size: 0.5rem; vertical-align: middle;"></i>
+                                                Ən azı 1 rəqəm
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer bg-light">
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                    <i class="fas fa-times me-1"></i> Ləğv et
+                                </button>
+                                <button type="button" class="btn btn-primary" id="save-password-btn" disabled>
+                                    <i class="fas fa-save me-1"></i> Yadda saxla
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <style>
+                    /* Fallback/override styles to ensure the change password modal is visible even without Bootstrap */
+                    #changePasswordModal { display: none; }
+                    #changePasswordModal.show { display: block; position: fixed; inset: 0; z-index: 3000; overflow: auto; }
+                    #changePasswordModal .modal-dialog { margin: 10vh auto; max-width: 520px; }
+                    #changePasswordModal .modal-content { border-radius: 12px; box-shadow: 0 18px 40px rgba(0,0,0,0.18); }
+                    #changePasswordModal .modal-header { border-top-left-radius: 12px; border-top-right-radius: 12px; }
+                    #changePasswordModal .modal-footer { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+                    /* End fallback modal styles */
+                    .password-strength .progress {
+                        height: 5px;
+                        border-radius: 3px;
+                        background-color: #e9ecef;
+                    }
+                    
+                    .password-strength .progress-bar {
+                        transition: width 0.3s ease, background-color 0.3s ease;
+                    }
+                    
+                    .password-requirements li {
+                        transition: color 0.3s ease;
+                        margin-bottom: 0.25rem;
+                    }
+                    
+                    .password-requirements li.valid {
+                        color: #198754 !important;
+                    }
+                    
+                    .password-requirements li.valid i {
+                        color: #198754;
+                    }
+                </style>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Superadmin məlumatlarını yükləyən funksiya
+        async function loadSuperAdminProfile() {
+            try {
+                // Əgər localStorage-da məlumat varsa, onu göstər
+                const storedUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                
+                // Avatar hissəsini yenilə
+                const avatarElement = document.getElementById('user-avatar');
+                const fullnameElement = document.getElementById('user-fullname');
+                const roleElement = document.getElementById('user-role');
+                const phoneElement = document.getElementById('user-phone-text');
+                
+                // Əgər localStorage-da məlumat varsa, onu göstər
+                if (storedUser && storedUser.username) {
+                    if (avatarElement) {
+                        const username = storedUser.username || 'A';
+                        avatarElement.textContent = username.charAt(0).toUpperCase();
+                        // Avatar düyməsini də yenilə
+                        const avatarBtn = document.querySelector('#avatar-btn span');
+                        if (avatarBtn) avatarBtn.textContent = username.charAt(0).toUpperCase();
+                    }
+                    
+                    if (fullnameElement) {
+                        fullnameElement.textContent = 'Timur Eminli';
+                    }
+                    
+                    if (roleElement) {
+                        const roleText = storedUser.role === 'superadmin' ? 'Super Admin' : 
+                                       storedUser.role === 'admin' ? 'Admin' :
+                                       storedUser.role === 'moderator' ? 'Moderator' : 'İstifadəçi';
+                        roleElement.innerHTML = `<i class="fas fa-shield-alt" style="margin-right: 6px; font-size: 12px;"></i>
+                                              <span>${roleText}</span>`;
+                    }
+                    
+                    if (phoneElement) {
+                        // Həmişə "+994 50 452 00 55" nömrəsini göstər
+                        phoneElement.textContent = '+994 50 452 00 55';
+                    }
+                    
+                    // Əgər məlumat varsa, API-ya sorğu göndərməyə ehtiyac yoxdur
+                    return;
+                }
+                
+                // Əgər localStorage-da məlumat yoxdursa, API-ya sorğu göndər
+                const response = await fetch('/api/users/me', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Serverdən məlumat alınarkən xəta baş verdi');
+                }
+                
+                const userData = await response.json();
+                
+                // Məlumatları localStorage-da saxla
+                localStorage.setItem('currentUser', JSON.stringify(userData));
+                
+                // UI-ı yenilə
+                if (avatarElement) {
+                    const username = userData.username || 'A';
+                    avatarElement.textContent = username.charAt(0).toUpperCase();
+                    // Avatar düyməsini də yenilə
+                    const avatarBtn = document.querySelector('#avatar-btn span');
+                    if (avatarBtn) avatarBtn.textContent = username.charAt(0).toUpperCase();
+                }
+                
+                if (fullnameElement) {
+                    fullnameElement.textContent = 'Timur Eminli';
+                }
+                
+                if (roleElement) {
+                    const roleText = userData.role === 'superadmin' ? 'Super Admin' : 
+                                   userData.role === 'admin' ? 'Admin' :
+                                   userData.role === 'moderator' ? 'Moderator' : 'İstifadəçi';
+                    roleElement.innerHTML = `<i class="fas fa-shield-alt" style="margin-right: 6px; font-size: 12px;"></i>
+                                          <span>${roleText}</span>`;
+                }
+                
+                if (phoneElement) {
+                    // Həmişə "+994 50 452 00 55" nömrəsini göstər
+                    phoneElement.textContent = '+994 50 452 00 55';
+                }
+                
+                if (phoneElement) {
+                    const phone = userData.phone || '050 000 00 00';
+                    const formattedPhone = phone.replace(/(\d{3})(\d{2})(\d{2})(\d{2})(\d{2})/, '+$1 ($2) $3-$4-$5');
+                    phoneElement.textContent = formattedPhone;
+                }
+                
+            } catch (error) {
+                console.error('Profil məlumatları yüklənərkən xəta:', error);
+                // Əgər xəta baş verərsə, default dəyərlər təyin et
+                const fullnameElement = document.getElementById('user-fullname');
+                const roleElement = document.getElementById('user-role');
+                
+                if (fullnameElement) fullnameElement.textContent = 'Timur Eminli';
+                if (roleElement) {
+                    roleElement.innerHTML = '<i class="fas fa-shield-alt" style="margin-right: 6px; font-size: 12px;"></i>Super Admin';
+                }
+                
+                // Avatar düyməsini də yenilə
+                const avatarBtn = document.querySelector('#avatar-btn span');
+                if (avatarBtn) avatarBtn.textContent = 'A';
+            }
+        }
+
+        // Avatar düyməsinə klikləndikdə işləyəcək funksiya
+        function setupAvatarDropdown() { /* avatar disabled */ }
+
+        // Səhifə yükləndikdə işə düşəcək əsas funksiya
+        function initPage() {
+            // Avatar dropdown disabled
+            // setupAvatarDropdown();
+            
+            // Yalnız Users tab aktivdirsə istifadəçiləri yüklə
+            const usersTab = document.getElementById('users');
+            if (usersTab && usersTab.classList.contains('active')) {
+                if (typeof loadUsers === 'function') loadUsers();
+            }
+        }
+        
+        // Sənəd yükləndikdə və ya artıq yüklənibsə işə düş
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initPage);
+        } else {
+            initPage();
+        }
+    </script>
+
+    <!-- Global CONFIG fallback for admin panel -->
+    <script>
+        // Ensure a global CONFIG exists for modules that expect it
+        (function(){
+            try {
+                if (typeof window.CONFIG === 'undefined' || !window.CONFIG || !window.CONFIG.API_BASE_URL) {
+                    var detected = (window.location && window.location.origin) ? window.location.origin : '';
+                    var fallback = 'http://127.0.0.1:3001';
+                    var base = detected && /^(http:\/\/|https:\/\/)/.test(detected) ? detected : fallback;
+                    window.CONFIG = {
+                        API_BASE_URL: base,
+                        TOKEN_REFRESH_INTERVAL: 5 * 60 * 1000,
+                        TOKEN_EXPIRY_OFFSET: 5 * 60 * 1000
+                    };
+                    console.log('[CONFIG] Global CONFIG fallback applied:', window.CONFIG.API_BASE_URL);
+                } else {
+                    console.log('[CONFIG] Using existing CONFIG:', window.CONFIG.API_BASE_URL);
+                }
+            } catch (e) {
+                console.warn('CONFIG fallback init failed:', e);
+            }
+        })();
+    </script>
+
+    <!-- Centralized Auth and Session Manager -->
+    <script>
+        // Centralized auth utilities and session manager
+        (function(){
+            try {
+                // Avoid redefining
+                if (!window.auth) {
+                    const KEYS = ['authToken','auth_token','token'];
+                    const auth = {
+                        getToken: function(){
+                            try {
+                                for (var i=0;i<KEYS.length;i++){
+                                    var v = localStorage.getItem(KEYS[i]);
+                                    if (v) return v;
+                                }
+                                return '';
+                            } catch(_) { return ''; }
+                        },
+                        setToken: function(token){
+                            try {
+                                if (!token) return;
+                                localStorage.setItem('authToken', token);
+                                // Keep alias for compatibility/debugging
+                                localStorage.setItem('token', token);
+                            } catch(_){ }
+                        },
+                        removeToken: function(){
+                            try {
+                                localStorage.removeItem('authToken');
+                                localStorage.removeItem('auth_token');
+                                localStorage.removeItem('token');
+                            } catch(_){}
+                        },
+                        isValid: function(){
+                            var token = this.getToken();
+                            if (!token) return false;
+                            // If JWT, check exp; if parse fails, gracefully fall back
+                            if (token.split('.').length === 3) {
+                                try {
+                                    var mid = token.split('.')[1];
+                                    var json = atob(mid);
+                                    var payload = JSON.parse(json);
+                                    if (payload && payload.exp) {
+                                        return (payload.exp * 1000) > Date.now();
+                                    }
+                                } catch (_) {
+                                    // Not a real JWT (e.g., custom token format). Fall through to fallback check.
+                                }
+                            }
+                            // Fallback: tokenExpiresAt (set by login remember or backend expiresIn)
+                            try {
+                                var expiresAt = localStorage.getItem('tokenExpiresAt');
+                                if (expiresAt) return new Date(expiresAt).getTime() > Date.now();
+                            } catch(_){ }
+                            // If no expiry info, assume valid to avoid premature logout; server will enforce auth on requests
+                            return true;
+                        }
+                    };
+                    window.auth = auth;
+                }
+
+                // Session manager
+                if (!window.SessionManager) {
+                    window.SessionManager = function(){
+                        this.checkInterval = 60 * 1000; // 1 dəqiqə
+                        this.warningTime = 5 * 60 * 1000; // 5 dəqiqə
+                        this.intervalId = null;
+                    };
+                    window.SessionManager.prototype.start = function(){
+                        var self = this;
+                        if (self.intervalId) return;
+                        self.intervalId = setInterval(async function(){
+                            try {
+                                if (!window.auth || !window.auth.isValid()) {
+                                    self.logout();
+                                } else {
+                                    self.checkSessionTimeout();
+                                }
+                            } catch (e) {
+                                console.error('Session check error:', e);
+                            }
+                        }, self.checkInterval);
+                    };
+                    window.SessionManager.prototype.checkSessionTimeout = function(){
+                        try {
+                            var expiresAt = localStorage.getItem('tokenExpiresAt');
+                            if (!expiresAt) return;
+                            var timeLeft = new Date(expiresAt).getTime() - Date.now();
+                            if (timeLeft < this.warningTime && timeLeft > 0) {
+                                this.showSessionWarning(timeLeft);
+                            }
+                        } catch(e) { console.warn('checkSessionTimeout error:', e); }
+                    };
+                    window.SessionManager.prototype.showSessionWarning = function(timeLeft){
+                        var mins = Math.ceil(timeLeft / 60000);
+                        if (confirm('Oturumunuz ' + mins + ' dəqiqə sonra bağlanacaq. Davam etmək istəyirsiniz?')) {
+                            this.refreshToken();
+                        } else {
+                            this.logout();
+                        }
+                    };
+                    window.SessionManager.prototype.refreshToken = async function(){
+                        try {
+                            var token = window.auth ? window.auth.getToken() : '';
+                            if (!token) return false;
+                            var base = (window.CONFIG && window.CONFIG.API_BASE_URL) ? window.CONFIG.API_BASE_URL : 'http://localhost:3001';
+                            var resp = await fetch(base.replace(/\/$/, '') + '/api/auth/refresh', {
+                                method: 'POST',
+                                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+                            });
+                            if (resp.ok) {
+                                var data = await resp.json();
+                                if (data && data.token) {
+                                    window.auth.setToken(data.token);
+                                    if (data.expiresIn) {
+                                        var exp = new Date(Date.now() + (Number(data.expiresIn) || 0));
+                                        localStorage.setItem('tokenExpiresAt', exp.toISOString());
+                                    }
+                                    if (data.user) {
+                                        try { localStorage.setItem('user', JSON.stringify(data.user)); localStorage.setItem('auth_user', JSON.stringify(data.user)); } catch(_){ }
+                                    }
+                                    return true;
+                                }
+                            }
+                            return false;
+                        } catch (error) {
+                            console.error('Token yenilənərkən xəta:', error);
+                            return false;
+                        }
+                    };
+                    window.SessionManager.prototype.logout = function(){
+                        try { if (this.intervalId) clearInterval(this.intervalId); } catch(_){ }
+                        try {
+                            if (window.auth) window.auth.removeToken();
+                            localStorage.removeItem('tokenExpiresAt');
+                        } catch(_){ }
+                        window.location.href = 'login.html';
+                    };
+                }
+
+                // Start centralized session and announce to legacy code
+                if (!window.sessionManager) {
+                    window.sessionManager = new window.SessionManager();
+                }
+                window.__USE_CENTRAL_SESSION__ = true;
+                if (!window.__SESSION_STARTED__) {
+                    window.__SESSION_STARTED__ = true;
+                    window.sessionManager.start();
+                    console.log('[Session] Centralized session manager started');
+                }
+            } catch (e) {
+                console.error('Central auth/session init failed:', e);
+            }
+        })();
+    </script>
+
+    <!-- Profile management functionality -->
+    <script type="module" src="js/profile.js"></script>
+    
+    <!-- Users management functionality -->
+    <script type="module" src="js/admin-users.js"></script>
+    <script>
+        // Minimal helpers to ensure tabs and forms work even if other scripts fail
+        function activateTab(tabId) {
+            try {
+                document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+                var el = document.getElementById(tabId);
+                if (el) el.classList.add('active');
+            } catch (error) {
+                console.error('activateTab error:', error);
+                if (window.toast?.error) toast.error('Xəta baş verdi: ' + (error.message||'Tab dəyişdirilə bilmədi'));
+            }
+        }
+        function validateForm(form) {
+            var isValid = true;
+            try {
+                form.querySelectorAll('[required]').forEach(function(input){
+                    if (!String(input.value||'').trim()) {
+                        isValid = false;
+                        input.classList.add('is-invalid');
+                    } else {
+                        input.classList.remove('is-invalid');
+                    }
+                });
+            } catch (error) {
+                console.error('Form validation error:', error);
+            }
+            return isValid;
+        }
+        (function(){
+            try {
+                var API = (window.CONFIG && window.CONFIG.API_BASE_URL) ? window.CONFIG.API_BASE_URL.replace(/\/api$/, '') + '/api' : 'http://localhost:3001/api';
+                function getToken() {
+                    try { return localStorage.getItem('auth_token') || localStorage.getItem('authToken') || localStorage.getItem('token') || ''; } catch(_) { return ''; }
+                }
+                var token = getToken();
+                console.log('[Auth] Initial token present:', !!token);
+                try { console.log('[Auth] localStorage.authToken:', localStorage.getItem('authToken')); } catch(_) {}
+                try { console.log('[Auth] Cookies:', document.cookie || '(empty)'); } catch(_) {}
+                console.log('[API] Base:', API);
+                if (!token) {
+                    // Only redirect if we are on admin panel page, but wait briefly to avoid race conditions
+                    if (location.pathname.endsWith('admin-panel.html')) {
+                        var attempts = 0;
+                        var maxAttempts = 5; // ~750ms total
+                        var interval = setInterval(function(){
+                            attempts++;
+                            token = getToken();
+                            if (token || attempts >= maxAttempts) {
+                                clearInterval(interval);
+                                if (!token) {
+                                    location.href = 'login.html';
+                                }
+                            }
+                        }, 150);
+                    }
+                }
+                // Health check (non-blocking)
+                fetch(API + '/health', { method: 'GET' }).then(function(res){
+                    if (!res.ok) throw new Error('API cavab vermir');
+                    return res.json();
+                }).catch(function(err){
+                    console.error('API əlaqə xətası:', err);
+                    if (window.toast?.warn) toast.warn('API əlaqəsi yoxdur. Offline rejim.');
+                });
+            } catch (e) {
+                console.error('Init helpers failed:', e);
+            }
+        })();
+    </script>
+</body>
+</html>
+
+<!-- Duplicate legacy script disabled to prevent conflicts -->
+<script type="application/disabled">
+// Səhifə yüklənəndə işə düşəcək funksiya
+function loadUserProfile() {
+    try {
+        // LocalStorage-dan istifadəçi məlumatlarını al (fərqli açarlara uyğunluqla)
+        let userData;
+        try {
+            const rawAuthUser = localStorage.getItem('auth_user') || localStorage.getItem('user');
+            if (rawAuthUser) {
+                const parsed = JSON.parse(rawAuthUser);
+                const fullname = [parsed.firstName, parsed.lastName].filter(Boolean).join(' ').trim() || parsed.username || 'İstifadəçi';
+                userData = {
+                    fullname,
+                    role: parsed.role || 'İstifadəçi',
+                    phone: parsed.phoneNumber || '+994 XX XXX XX XX',
+                    email: parsed.email || 'admin@example.com'
+                };
+            }
+        } catch(_) {}
+        if (!userData) {
+            userData = {
+                fullname: 'Admin İstifadəçi',
+                role: 'Admin',
+                phone: '+994 XX XXX XX XX',
+                email: 'admin@example.com'
+            };
+        }
+        
+        console.log('Yüklənən istifadəçi məlumatları:', userData);
+        
+        // Avatar hissəsini güncəllə (dropdown içindəki böyük avatar)
+        let avatarInitial = 'A';
+        if (userData.fullname) {
+            const names = String(userData.fullname).trim().split(/\s+/);
+            if (names.length >= 2) {
+                avatarInitial = (names[0][0] + names[1][0]).toUpperCase();
+            } else {
+                avatarInitial = names[0].substring(0, 2).toUpperCase();
+            }
+        }
+        const avatarEl = document.getElementById('user-avatar');
+        if (avatarEl) {
+            avatarEl.textContent = avatarInitial;
+        }
+        
+        // Avatar düyməsini tap və içindəki span-ı yenilə/yarat
+        const avatarBtn = document.getElementById('avatar-btn');
+        if (avatarBtn) {
+            const avatarBtnSpan = avatarBtn.querySelector('span');
+            if (avatarBtnSpan) {
+                avatarBtnSpan.textContent = avatarInitial;
+            } else {
+                const newSpan = document.createElement('span');
+                newSpan.id = 'user-avatar';
+                newSpan.textContent = avatarInitial;
+                avatarBtn.innerHTML = '';
+                avatarBtn.appendChild(newSpan);
+            }
+        }
+        
+        // Tam adı güncəllə
+        const fullnameEl = document.getElementById('user-fullname');
+        if (fullnameEl) fullnameEl.textContent = userData.fullname || 'İstifadəçi';
+        
+        // Vəzifəni güncəllə
+        const roleEl = document.querySelector('#user-role span');
+        if (roleEl) roleEl.textContent = userData.role || 'İstifadəçi';
+        
+        // Əlaqə nömrəsini güncəllə
+        const phoneEl = document.getElementById('user-phone-text');
+        if (phoneEl) phoneEl.textContent = userData.phone || '+994 XX XXX XX XX';
+        
+        return true;
+    } catch (error) {
+        console.error('İstifadəçi məlumatları yüklənərkən xəta baş verdi:', error);
+        return false;
+    }
+}
+
+// İstifadəçi məlumatlarını yenilə
+function updateUserUI(userData) {
+    if (!userData) return;
+    
+    // Avatar baş hərfi
+    const avatarEl = document.getElementById('user-avatar');
+    if (avatarEl) {
+        const name = userData.fullName || userData.username || 'A';
+        avatarEl.textContent = name.charAt(0).toUpperCase();
+    }
+    
+    // İstifadəçi adı
+    const usernameEl = document.getElementById('user-username');
+    if (usernameEl) {
+        usernameEl.textContent = userData.username || 'İstifadəçi';
+    }
+    
+    // Tam ad
+    const fullnameEl = document.getElementById('user-fullname');
+    if (fullnameEl) {
+        fullnameEl.textContent = userData.fullName || userData.username || 'İstifadəçi';
+    }
+    
+    // Vəzifə
+    const roleEl = document.querySelector('#user-role span');
+    if (roleEl) {
+        roleEl.textContent = userData.role || 'İstifadəçi';
+    }
+    
+    // Əlaqə nömrəsi
+    const phoneEl = document.getElementById('user-phone-text');
+    if (phoneEl) {
+        phoneEl.textContent = userData.phoneNumber || userData.phone || '+994 XX XXX XX XX';
+    }
+}
+
+// Səhifə yüklənəndə işə düş
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('Admin panel yüklənir...');
+    
+    // Əsas token yoxlaması
+    const checkAuth = () => {
+        // Əvvəlcə bütün mümkün token yerlərini yoxla
+        const token = localStorage.getItem('authToken') || 
+                     localStorage.getItem('auth_token') ||
+                     localStorage.getItem('token') ||
+                     (localStorage.getItem('user') && JSON.parse(localStorage.getItem('user')).token);
+        
+        console.log('Auth token yoxlanılır...');
+        return !!token;
+    };
+
+    // İlk yoxlama
+    if (!checkAuth()) {
+        console.warn('Auth token tapılmadı! Login səhifəsinə yönləndirilir...');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // İstifadəçi məlumatlarını yüklə
+    try {
+        console.log('İstifadəçi məlumatları yüklənir...');
+        
+        // İstifadəçi məlumatlarını yüklə
+        let userData = null;
+        const userDataStr = localStorage.getItem('user') || localStorage.getItem('auth_user');
+        
+        if (userDataStr) {
+            try {
+                userData = JSON.parse(userDataStr);
+                console.log('İstifadəçi məlumatları yükləndi:', userData.username);
+            } catch (e) {
+                console.error('İstifadəçi məlumatları oxunarkən xəta:', e);
+            }
+        }
+        
+        // Əgər userData yoxdursa, default dəyərlər təyin et
+        if (!userData) {
+            console.warn('İstifadəçi məlumatları tapılmadı, default dəyərlər tətbiq olunur...');
+            userData = {
+                username: 'admin',
+                fullName: 'Admin',
+                role: 'Administrator'
+            };
+        }
+        
+        // İstifadəçi məlumatlarını güncəllə
+        updateUserUI(userData);
+    } catch (error) {
+        console.error('Xəta baş verdi:', error);
+        // Redirect etmə, sadəcə xəbərdar et və admin.js-in auth yoxlamasına icazə ver
+        if (window.toast && window.toast.warn) {
+            window.toast.warn('Məlumat yüklənərkən xəta. Sessiya yoxlaması aparılır...');
+        }
+    }
+});
+
+// İstifadəçi məlumatlarını yenilə
+function updateUserUI(userData) {
+    if (!userData) return;
+    
+    // Avatar baş hərfi
+    const avatarEl = document.getElementById('user-avatar');
+    if (avatarEl) {
+        const name = userData.fullName || userData.username || 'A';
+        avatarEl.textContent = name.charAt(0).toUpperCase();
+    }
+    
+    // İstifadəçi adı
+    const usernameEl = document.getElementById('user-username');
+    if (usernameEl) {
+        usernameEl.textContent = userData.username || 'İstifadəçi';
+    }
+    
+    // Tam ad
+    const fullnameEl = document.getElementById('user-fullname');
+    if (fullnameEl) {
+        fullnameEl.textContent = userData.fullName || userData.username || 'İstifadəçi';
+    }
+    
+    // Vəzifə
+    const roleEl = document.querySelector('#user-role span');
+    if (roleEl) {
+        roleEl.textContent = userData.role || 'İstifadəçi';
+    }
+    
+    // Əlaqə nömrəsi
+    const phoneEl = document.getElementById('user-phone-text');
+    if (phoneEl) {
+        phoneEl.textContent = userData.phoneNumber || userData.phone || '+994 XX XXX XX XX';
+    }
+}
+
+// Token yoxlama və sessiya idarəetmə parametrləri
+const TOKEN_CHECK_INTERVAL = 15 * 60 * 1000; // 15 dəqiqə
+const SESSION_WARNING_OFFSET = 5 * 60 * 1000; // 5 dəqiqə qalmış xəbərdar et
+
+// Tokenin etibarlılığını yoxlama funksiyası
+function checkAuth() {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token') || localStorage.getItem('token');
+    if (!token) return false;
+
+    // 1) JWT-disə exp-i yoxla
+    if (token.includes('.')) {
+        try {
+            const payloadStr = atob(token.split('.')[1]);
+            const payload = JSON.parse(payloadStr);
+            if (payload && payload.exp) {
+                return payload.exp * 1000 > Date.now();
+            }
+        } catch (_) {
+            // ignore and fall back
+        }
+    }
+
+    // 2) login.html tərəfindən yazılan tokenExpiresAt dəyərinə görə yoxla
+    try {
+        const expIso = localStorage.getItem('tokenExpiresAt');
+        if (expIso) {
+            const expMs = new Date(expIso).getTime();
+            return expMs > Date.now();
+        }
+    } catch (_) {}
+
+    // Son çarə: token varsa true
+    return true;
+}
+
+// Sessiya bitmə xəbərdarlığı
+let sessionWarningShown = false;
+async function showSessionTimeoutWarning() {
+    try {
+        const wantsContinue = confirm('Sessiyanızın vaxtı bitmək üzrədir. Davam etmək istəyirsiniz?');
+        if (wantsContinue) {
+            await refreshToken();
+        } else {
+            // Yaddaşdan auth məlumatlarını sil və çıxış et
+            try {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('tokenExpiresAt');
+            } catch (_){}
+            window.location.href = 'login.html';
+        }
+    } catch (e) {
+        console.error('Sessiya xəbərdarlığı zamanı xəta:', e);
+    }
+}
+
+// Tokeni yeniləmək üçün köməkçi
+async function refreshToken() {
+    const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
+    if (!token) return false;
+    const base = (window.CONFIG && window.CONFIG.API_BASE_URL) ? window.CONFIG.API_BASE_URL : 'http://localhost:3001';
+    try {
+        const resp = await fetch(base + '/api/auth/refresh', {
+            method: 'POST',
+            headers: {
+                'Authorization': 'Bearer ' + token,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!resp.ok) {
+            console.warn('Token yenilənmədi:', resp.status);
+            return false;
+        }
+        const data = await resp.json();
+        if (data && data.token) {
+            localStorage.setItem('authToken', data.token);
+            if (data.expiresIn && Number.isFinite(data.expiresIn)) {
+                const expiresAt = new Date(Date.now() + Number(data.expiresIn));
+                localStorage.setItem('tokenExpiresAt', expiresAt.toISOString());
+            }
+            if (data.user) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+                localStorage.setItem('auth_user', JSON.stringify(data.user));
+            }
+            sessionWarningShown = false; // reset
+            return true;
+        }
+        return false;
+    } catch (err) {
+        console.error('Token yenilənərkən xəta:', err);
+        return false;
+    }
+}
+
+// Səhifə yüklənəndə işə düş
+function initializePage() {
+    // Avatar düyməsinə klikdə məlumatları yenilə
+    const avatarBtn = document.getElementById('avatar-btn');
+    if (avatarBtn) {
+        avatarBtn.addEventListener('click', function() {
+            console.log('Avatar düyməsinə klik edildi, məlumatlar yenilənir...');
+            window.location.reload();
+        });
+    }
+    
+    // Müntəzəm aralıqlarla tokenin etibarlılığını yoxla (15 dəqiqədən bir)
+    if (!window.__USE_CENTRAL_SESSION__) setInterval(async () => {
+        try {
+            if (!checkAuth()) {
+                console.warn('Token etibarsızdır və ya vaxtı bitib, çıxış edilir...');
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // Sessiya bitmə xəbərdarlığı
+            try {
+                const expIso = localStorage.getItem('tokenExpiresAt');
+                if (expIso) {
+                    const expMs = new Date(expIso).getTime();
+                    const timeLeft = expMs - Date.now();
+                    if (timeLeft > 0 && timeLeft <= SESSION_WARNING_OFFSET && !sessionWarningShown) {
+                        sessionWarningShown = true;
+                        showSessionTimeoutWarning();
+                    }
+                }
+            } catch (_) {}
+
+            // Serverə yalnız arada bir ping at: mövcud /auth/me endpoint-i ilə
+            const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
+            if (token) {
+                const response = await fetch(`${window.CONFIG?.API_BASE_URL || 'http://localhost:3001'}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    throw new Error('Token yoxlanışı uğursuz oldu');
+                }
+            }
+        } catch (error) {
+            console.error('Token yoxlanışı xətası:', error);
+            try {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('auth_token');
+            } catch(_) {}
+            window.location.href = 'login.html';
+        }
+    }, TOKEN_CHECK_INTERVAL); // 15 dəqiqədən bir yoxla
+}
+
+// Səhifə yüklənəndə işə düşəcək funksiya
+function initializeAuth() {
+    // Əsas token yoxlaması
+    const checkAuth = () => {
+        const token = localStorage.getItem('authToken') || 
+                     localStorage.getItem('auth_token') ||
+                     (localStorage.getItem('user') && JSON.parse(localStorage.getItem('user')).token);
+        return !!token;
+    };
+
+    // İlk yoxlama
+    if (!checkAuth()) {
+        console.warn('Auth token tapılmadı! Login səhifəsinə yönləndirilir...');
+        window.location.href = 'login.html';
+        return;
+    }
+
+    // Səhifəni işə sal
+    initializePage();
+}
+
+// Sənəd yükləndikdə işə düş
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeAuth);
+} else {
+    initializeAuth();
+}
+
+// Qlobalda əlçatan et
+window.loadUserProfile = loadUserProfile;
+window.updateUserUI = updateUserUI;
+</script>

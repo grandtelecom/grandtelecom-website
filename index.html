@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="az" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grand Telecom - Sürətli İnternet Həlləri</title>
+    <!-- CONFIG qlobal obyektini yalnız js/config.js təmin edəcək; burada heç nə elan etmirik ki, təkrar const xətası olmasın. -->
+    <link rel="stylesheet" href="styles.css?v=4.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous">
+    <!-- External font CDNs removed to avoid CORS during local dev (JetBrains x-ijt header). Use system fonts or self-host in production. -->
+</head>
+<body>
+
+    <header>
+        <nav class="navbar">
+            <div class="nav-container">
+                <div class="nav-logo" onclick="window.location.href='#home'" style="cursor: pointer;">
+                    <img src="Best1.svg" alt="Grand Telecom" class="logo-img">
+                    <img src="Best2.svg" alt="Grand Telecom" class="logo-text">
+                </div>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="#home" class="nav-link">Ana Səhifə</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#services" class="nav-link">Xidmətlər</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#tariffs" class="nav-link">Tariflər</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#about" class="nav-link">Haqqımızda</a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#contact" class="nav-link">Əlaqə</a>
+                    </li>
+                    <li class="nav-item">
+                        
+                    </li>
+                </ul>
+                <div class="language-selector">
+                    <div class="language-dropdown">
+                        <button class="language-btn" id="languageBtn">
+                            <i class="fas fa-globe"></i>
+                            <span id="currentLang">AZ</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="language-options" id="languageOptions">
+                            <div class="language-option" data-lang="az">
+                                <span class="flag">🇦🇿</span>
+                                <span>Azərbaycan</span>
+                            </div>
+                            <div class="language-option" data-lang="tr">
+                                <span class="flag">🇹🇷</span>
+                                <span>Türkçe</span>
+                            </div>
+                            <div class="language-option" data-lang="en">
+                                <span class="flag">🇺🇸</span>
+                                <span>English</span>
+                            </div>
+                            <div class="language-option" data-lang="ru">
+                                <span class="flag">🇷🇺</span>
+                                <span>Русский</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="hamburger">
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                    <span class="bar"></span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+
+    <main>
+        
+        <section id="home" class="hero">
+            <div class="hero-overlay"></div>
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1 id="hero-title">Yüklənir...</h1>
+                    <p id="hero-subtitle">Yüklənir...</p>
+                    <p id="hero-description">Yüklənir...</p>
+                    <div class="hero-buttons" id="hero-buttons"></div>
+                </div>
+            </div>
+        </section>
+
+        
+
+        <section id="services" class="services">
+            <div class="services-content">
+                <div class="section-header">
+                    <h2 id="services-title">Xidmətlərimiz</h2>
+                    <p id="services-subtitle">Sizə təklif etdiyimiz xidmətlər</p>
+                </div>
+                <div class="services-grid" id="services-grid">
+                    <!-- Services will be loaded here dynamically -->
+                </div>
+            </div>
+        </section>
+
+        <section id="tariffs" class="tariffs">
+            <div class="tariffs-content">
+                <div class="section-header">
+                    <h2>Tariflər</h2>
+                    <p class="tariffs-subtitle">Sizə uyğun tarifdən seçin</p>
+                </div>
+                <div class="tariffs-grid" id="tariff-cards-container">
+                    <div class="tariff-card">
+                        <div class="tariff-icon">
+                            <i class="fas fa-rocket"></i>
+                        </div>
+                        <h3>Başlanğıc</h3>
+                        <div class="tariff-price">29₼<span>/ay</span></div>
+                        <div class="speed">50 Mbps</div>
+                        <ul class="tariff-features">
+                            <li>50 Mbps internet sürəti</li>
+                            <li>Limitsiz trafik</li>
+                            <li>Pulsuz Wi-Fi router</li>
+                            <li>24/7 texniki dəstək</li>
+                            <li>Pulsuz quraşdırma</li>
+                        </ul>
+                        <button class="tariff-button">Seç</button>
+                    </div>
+                    <div class="tariff-card featured">
+                        <div class="popular-badge">Populyar</div>
+                        <div class="tariff-icon featured-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h3>Standart</h3>
+                        <div class="tariff-price">49₼<span>/ay</span></div>
+                        <div class="speed">100 Mbps</div>
+                        <ul class="tariff-features">
+                            <li>100 Mbps internet sürəti</li>
+                            <li>Limitsiz trafik</li>
+                            <li>Pulsuz Wi-Fi router</li>
+                            <li>50+ IPTV kanalı</li>
+                            <li>24/7 texniki dəstək</li>
+                            <li>Pulsuz quraşdırma</li>
+                        </ul>
+                        <button class="tariff-button">Seç</button>
+                    </div>
+                    <div class="tariff-card">
+                        <div class="tariff-icon">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <h3>Premium</h3>
+                        <div class="tariff-price">79₼<span>/ay</span></div>
+                        <div class="speed">500 Mbps</div>
+                        <ul class="tariff-features">
+                            <li>500 Mbps internet sürəti</li>
+                            <li>Limitsiz trafik</li>
+                            <li>Premium Wi-Fi router</li>
+                            <li>200+ IPTV kanalı</li>
+                            <li>VoIP telefon xidməti</li>
+                            <li>24/7 VIP dəstək</li>
+                            <li>Pulsuz quraşdırma</li>
+                        </ul>
+                        <button class="tariff-button">Seç</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="about" class="about">
+            <div class="about-content">
+                <div class="section-header">
+                    <h2 id="about-title">Haqqımızda</h2>
+                    <p id="about-subtitle">Grand Telecom haqqında məlumat</p>
+                </div>
+                <div class="about-intro">
+                    <p class="about-description" id="about-description">2015-ci ildən fəaliyyət göstərən Grand Telecom, Azərbaycanda telekommunikasiya sahəsində aparıcı şirkətlərdən biridir. Müştərilərimizə yüksək keyfiyyətli internet, televiziya və telefon xidmətləri təqdim edirik.</p>
+                </div>
+                
+
+                <div class="about-features">
+                    <div class="feature">
+                        <div class="feature-icon">
+                            🎯
+                        </div>
+                        <h3>Missiyamız</h3>
+                        <p id="mission-text">Müştərilərimizə ən yüksək keyfiyyətli internet və rabitə xidmətləri təqdim etmək, onların rəqəmsal həyatını asanlaşdırmaq və inkişaf etdirmək.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">
+                            🌐
+                        </div>
+                        <h3>Vizyonumuz</h3>
+                        <p id="vision-text">Azərbaycanda rəqəmsal transformasiyanın aparıcı qüvvəsi olmaq və ölkəmizin informasiya cəmiyyətinə keçidində əsas rol oynamaq.</p>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">
+                            🏅
+                        </div>
+                        <h3>Dəyərlərimiz</h3>
+                        <p id="values-text"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="contact-section">
+            <div class="container">
+                <div class="section-header">
+                    <h2>Bizimlə əlaqə</h2>
+                    <p>Suallarınız var? Bizə yazın və tezliklə cavab alın</p>
+                </div>
+                
+                <div class="contact-wrapper">
+                    <!-- Contact Information -->
+                    <div class="contact-info">
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div class="info-content">
+                                <h4>Telefon</h4>
+                                <div id="contact-phones">
+                                    <a href="tel:+994125550000">+994 12 555 00 00</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="info-content">
+                                <h4>E-mail</h4>
+                                <span id="contact-email">info@grandtelecom.az</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="info-content">
+                                <h4>Ünvan</h4>
+                                <span id="contact-address">Bakı şəhəri</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div class="info-content">
+                                <h4>İş saatları</h4>
+                                <span id="contact-hours">Hər gün 09:00-18:00</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Contact Form -->
+                    <div class="contact-form-container">
+                        <h4>Təklif və Şikayətinizi bildirin</h4>
+                        <form id="contact-form" class="contact-form" novalidate>
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label for="contact-name">Ad və Soyad</label>
+                                    <input type="text" id="contact-name" name="name" required>
+                                    <span class="error-message" id="name-error"></span>
+                                </div>
+                                <div class="form-field">
+                                    <label for="contact-email-input">E-mail</label>
+                                    <input type="email" id="contact-email-input" name="email" required>
+                                    <span class="error-message" id="email-error"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label for="contact-phone-input">Telefon</label>
+                                    <input type="tel" id="contact-phone-input" name="phone" placeholder="501234567" maxlength="9" pattern="[1-9][0-9]{8}" title="9 rəqəm, 0 ilə başlamamalı">
+                                    <span class="error-message" id="phone-error"></span>
+                                </div>
+                                <div class="form-field">
+                                    <label for="contact-subject">Mövzu</label>
+                                    <select id="contact-subject" name="subject" required>
+                                        <option value="">Seçin</option>
+                                        <option value="internet">İnternet xidməti</option>
+                                        <option value="tv">TV xidməti</option>
+                                        <option value="support">Texniki dəstək</option>
+                                        <option value="billing">Ödəniş məsələləri</option>
+                                        <option value="other">Digər</option>
+                                    </select>
+                                    <span class="error-message" id="subject-error"></span>
+                                </div>
+                            </div>
+                            
+                            <div class="form-field">
+                                <label for="contact-message">Mesajınız</label>
+                                <textarea id="contact-message" name="message" rows="3" required></textarea>
+                                <span class="error-message" id="message-error"></span>
+                            </div>
+                            
+                        </form>
+                        
+                        <div id="form-status" class="form-status" role="alert"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Grand Telecom</h3>
+                <p>Azərbaycanda ən sürətli və etibarlı internet xidməti.</p>
+                <div class="social-links">
+                    <a href="#" class="social-icon">fb</a>
+                    <a href="#" class="social-icon">tw</a>
+                    <a href="#" class="social-icon">ig</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Grand Telecom. Bütün hüquqlar qorunur.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Complete Chrome extension error elimination
+        (function() {
+            'use strict';
+            
+            const isExtensionError = (msg) => {
+                if (!msg) return false;
+                const str = String(msg).toLowerCase();
+                return str.includes('runtime.lasterror') || 
+                       str.includes('message port') || 
+                       str.includes('unchecked runtime') ||
+                       str.includes('extension') ||
+                       str.includes('chrome-extension');
+            };
+
+            const OriginalError = window.Error;
+            window.Error = function(message, ...args) {
+                if (isExtensionError(message)) {
+                    return {};
+                }
+                return new OriginalError(message, ...args);
+            };
+            window.Error.prototype = OriginalError.prototype;
+
+            const originalConsole = { ...console };
+            ['error', 'warn', 'log', 'info', 'debug'].forEach(method => {
+                console[method] = function(...args) {
+                    const msg = args.join(' ');
+                    if (!isExtensionError(msg)) {
+                        originalConsole[method].apply(console, args);
+                    }
+                };
+            });
+
+            window.onerror = function(message, source, lineno, colno, error) {
+                return isExtensionError(message);
+            };
+
+            const originalAddEventListener = EventTarget.prototype.addEventListener;
+            EventTarget.prototype.addEventListener = function(type, listener, options) {
+                if (type === 'error') {
+                    const wrappedListener = function(e) {
+                        if (isExtensionError(e.message || e.error?.message)) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            return;
+                        }
+                        if (listener) listener.call(this, e);
+                    };
+                    return originalAddEventListener.call(this, type, wrappedListener, options);
+                }
+                return originalAddEventListener.call(this, type, listener, options);
+            };
+
+            window.addEventListener('unhandledrejection', function(e) {
+                if (isExtensionError(e.reason?.message || e.reason)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+            });
+
+            try {
+                delete window.chrome;
+                Object.defineProperty(window, 'chrome', {
+                    get: () => undefined,
+                    set: () => {},
+                    configurable: false,
+                    enumerable: false
+                });
+            } catch (e) {
+                // Ignore if we can't delete chrome
+            }
+        })();
+
+        // Hero background click -> scroll to Services
+        function initHeroScroll() {
+            const hero = document.querySelector('.hero');
+            const services = document.getElementById('services');
+            if (!hero || !services) return;
+
+            hero.addEventListener('click', function(e) {
+                // Do not intercept clicks on buttons, links, or interactive elements
+                if (e.target.closest('a, button, .cta-button, .language-dropdown, .language-selector')) {
+                    return;
+                }
+                services.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+
+        // Show alert message function
+        function showAlert(message, type) {
+            const existingAlerts = document.querySelectorAll('.page-alert');
+            existingAlerts.forEach(alert => alert.remove());
+
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `page-alert alert-${type}`;
+            alertDiv.innerHTML = `
+                <div class="alert-content">
+                    <span class="alert-text">${message}</span>
+                    <button class="alert-close" onclick="this.parentElement.parentElement.remove()">×</button>
+                </div>
+            `;
+
+            alertDiv.style.cssText = `
+                position: fixed;
+                top: 80px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 9999;
+                padding: 15px 25px;
+                border-radius: 8px;
+                font-weight: bold;
+                text-align: center;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                animation: slideDown 0.3s ease-out;
+                max-width: 90%;
+                word-wrap: break-word;
+            `;
+
+            const colors = {
+                success: { bg: '#d4edda', border: '#c3e6cb', text: '#155724' },
+                error: { bg: '#f8d7da', border: '#f5c6cb', text: '#721c24' },
+                warning: { bg: '#fff3cd', border: '#ffeaa7', text: '#856404' },
+                info: { bg: '#d1ecf1', border: '#bee5eb', text: '#0c5460' },
+                danger: { bg: '#f8d7da', border: '#f5c6cb', text: '#721c24' }
+            };
+
+            const color = colors[type] || colors.info;
+            alertDiv.style.backgroundColor = color.bg;
+            alertDiv.style.borderLeft = `4px solid ${color.border}`;
+            alertDiv.style.color = color.text;
+
+            document.body.appendChild(alertDiv);
+
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.style.opacity = '0';
+                    setTimeout(() => alertDiv.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        // Backend fetch helper with multi-port fallback (3001 -> 3002 -> 3000)
+        function getCandidateBaseUrls() {
+            const base = CONFIG.API_BASE_URL;
+            const urls = [];
+            if (typeof base === 'string' && base) urls.push(base);
+            // Also include a variant without trailing /api if present
+            if (typeof base === 'string' && base.endsWith('/api')) {
+                urls.push(base.replace(/\/?api$/, ''));
+            }
+            // Swap between 3001 and 3002
+            if (typeof base === 'string') {
+                if (base.includes(':3001')) urls.push(base.replace(':3001', ':3002'));
+                else if (base.includes(':3002')) urls.push(base.replace(':3002', ':3001'));
+                else urls.push('http://localhost:3001', 'http://localhost:3002');
+            } else {
+                urls.push('http://localhost:3001', 'http://localhost:3002');
+            }
+            // Add PowerShell HTML server (3000)
+            if (!urls.includes('http://localhost:3000')) urls.push('http://localhost:3000');
+            // De-duplicate
+            return Array.from(new Set(urls));
+        }
+
+        async function fetchWithPortFallback(path, options = {}) {
+            // Ensure path starts with a slash
+            const cleanPath = path.startsWith('/') ? path : `/${path}`;
+            
+            // Remove any duplicate /api in the path
+            const normalizedPath = cleanPath.replace(/\/api\/api\//g, '/api/');
+            
+            const candidates = getCandidateBaseUrls();
+            let lastErr = null;
+            
+            console.log('Trying to fetch from path:', normalizedPath);
+            console.log('Candidate base URLs:', candidates);
+            
+            for (const base of candidates) {
+                // Ensure base URL doesn't end with a slash
+                const cleanBase = base.endsWith('/') ? base.slice(0, -1) : base;
+                // Avoid double /api when base already ends with /api and path starts with /api
+                const joinPath = (b, p) => {
+                    if (b.endsWith('/api') && p.startsWith('/api/')) {
+                        return `${b}${p.replace(/^\/api/, '')}`;
+                    }
+                    return `${b}${p}`;
+                };
+                const url = joinPath(cleanBase, normalizedPath);
+                
+                console.log('Trying URL:', url);
+                
+                try {
+                    const resp = await fetch(url, options);
+                    console.log(`Response from ${url}:`, resp.status, resp.statusText);
+                    
+                    if (resp.ok) {
+                        return resp;
+                    } else if (resp.status === 404) {
+                        console.warn(`Endpoint not found: ${url}`);
+                        lastErr = new Error(`Endpoint not found: ${url}`);
+                        continue;
+                    } else {
+                        lastErr = new Error(`HTTP error! status: ${resp.status}`);
+                        continue;
+                    }
+                } catch (err) {
+                    console.error(`Error fetching from ${url}:`, err);
+                    lastErr = err;
+                    continue;
+                }
+            }
+            
+            const errorMsg = lastErr ? lastErr.message : 'Bütün backend-lərə qoşulmaq mümkün olmadı';
+            console.error('All fetch attempts failed:', errorMsg);
+            throw new Error(errorMsg);
+        }
+
+        // Function to load content from backend
+        async function loadContent() {
+            try {
+                const cacheBuster = `?v=${Date.now()}`;
+                
+                // Load homepage data from backend
+                console.log('Loading homepage data...');
+                const homepageResponse = await fetchWithPortFallback(`/api/content/homepage${cacheBuster}`);
+                
+                if (homepageResponse && homepageResponse.ok) {
+                    const homepageData = await homepageResponse.json();
+                    console.log('Loaded homepage data:', homepageData);
+                    
+                    if (homepageData && homepageData.hero) {
+                        const heroTitle = document.getElementById('hero-title');
+                        const heroSubtitle = document.getElementById('hero-subtitle');
+                        const heroDescription = document.getElementById('hero-description');
+                        const heroButtonsCont = document.getElementById('hero-buttons');
+                        const heroSection = document.querySelector('.hero');
+                        
+                        if (heroTitle) heroTitle.textContent = homepageData.hero.title || 'Grand Telecom - Sürətli İnternet Həlləri';
+                        if (heroSubtitle) heroSubtitle.textContent = homepageData.hero.subtitle || 'Yüksək keyfiyyətli internet və rabitə xidmətləri';
+                        
+                        if (heroDescription) {
+                            if (homepageData.hero.description && homepageData.hero.description.includes('<')) {
+                                heroDescription.innerHTML = homepageData.hero.description;
+                            } else {
+                                heroDescription.textContent = homepageData.hero.description || 'Azərbaycanda ən sürətli və etibarlı internet xidməti təqdim edirik.';
+                            }
+                        }
+                        
+                        if (heroButtonsCont) {
+                            heroButtonsCont.innerHTML = `
+                                <a href="#tariffs" class="cta-button primary">Tariflər</a>
+                                <a href="#about" class="cta-button secondary">Ətraflı məlumat</a>
+                                <a href="#posts" class="cta-button secondary">Xəbərlər</a>
+                            `;
+                        }
+                        
+                        if (homepageData.hero.background_image && heroSection) {
+                            heroSection.style.backgroundImage = `url('${homepageData.hero.background_image}')`;
+                            heroSection.style.backgroundSize = 'cover';
+                            heroSection.style.backgroundPosition = 'center';
+                        }
+                    }
+                    
+                    if (homepageData.alert && homepageData.alert.text && homepageData.alert.type) {
+                        showAlert(homepageData.alert.text, homepageData.alert.type);
+                    }
+                }
+
+                // Load About data for About section on index
+                try {
+                    const aboutRespIdx = await fetchWithPortFallback(`/api/content/about${cacheBuster}`);
+                    if (aboutRespIdx && aboutRespIdx.ok) {
+                        const aboutIdx = await aboutRespIdx.json();
+                        const aboutTitleEl = document.getElementById('about-title');
+                        const aboutDescEl = document.getElementById('about-description');
+                        const missionEl = document.getElementById('mission-text');
+                        const visionEl = document.getElementById('vision-text');
+                        const valuesEl = document.getElementById('values-text');
+                        if (aboutTitleEl) aboutTitleEl.textContent = aboutIdx.title || 'Haqqımızda';
+                        if (aboutDescEl) {
+                            const raw = aboutIdx.content || '';
+                            const plain = (typeof raw === 'string') ? raw.replace(/<[^>]*>/g, '') : '';
+                            aboutDescEl.textContent = plain || aboutDescEl.textContent;
+                        }
+                        if (missionEl && typeof aboutIdx.mission === 'string') missionEl.textContent = aboutIdx.mission;
+                        if (visionEl && typeof aboutIdx.vision === 'string') visionEl.textContent = aboutIdx.vision;
+                        if (valuesEl) {
+                            const vt = (typeof aboutIdx.values_text === 'string') ? aboutIdx.values_text.trim() : '';
+                            if (vt) {
+                                valuesEl.textContent = vt;
+                            } else if (Array.isArray(aboutIdx.values)) {
+                                const summary = aboutIdx.values
+                                    .map(v => [v.title, v.description].filter(Boolean).join(': '))
+                                    .filter(Boolean)
+                                    .join(' • ');
+                                if (summary) valuesEl.textContent = summary;
+                            }
+                        }
+                    }
+                } catch(_) {}
+
+                // Load services data from backend
+                console.log('Loading services data...');
+                const servicesResponse = await fetchWithPortFallback(`/api/content/services${cacheBuster}`);
+                if (servicesResponse.ok) {
+                    const servicesData = await servicesResponse.json();
+                    if (servicesData) {
+                        const servicesTitle = document.getElementById('services-title');
+                        const servicesSubtitle = document.getElementById('services-subtitle');
+                        
+                        if (servicesTitle) servicesTitle.textContent = servicesData.title || 'Xidmətlərimiz';
+                        if (servicesSubtitle) servicesSubtitle.textContent = servicesData.subtitle || 'Sizə təklif etdiyimiz xidmətlər';
+                        
+                        const servicesGrid = document.getElementById('services-grid');
+                        if (servicesGrid) {
+                            if (servicesData.items && Array.isArray(servicesData.items) && servicesData.items.length > 0) {
+                                const validItems = servicesData.items.filter(s => {
+                                    const hasTitle = s.title && String(s.title).trim();
+                                    const hasDesc = s.description && String(s.description).trim();
+                                    const hasFeatures = Array.isArray(s.features) && s.features.some(f => String(f).trim());
+                                    // Only render if there is meaningful content (title/desc/features)
+                                    return hasTitle || hasDesc || hasFeatures;
+                                });
+                                if (validItems.length === 0) {
+                                    servicesGrid.innerHTML = '';
+                                } else {
+                                    servicesGrid.innerHTML = validItems.map(service => {
+                                        const fa = service.icon && String(service.icon).trim();
+                                        const iconHTML = fa ? `<i class="${fa}"></i>` : '';
+                                        const featured = service.popular ? ' featured' : '';
+                                        const featuredIcon = service.popular ? ' featured-icon' : '';
+                                        const badge = service.popular ? '<div class="popular-badge">Populyar</div>' : '';
+                                        const iconSection = iconHTML ? `<div class="tariff-icon${featuredIcon}">${iconHTML}</div>` : '';
+                                        const title = (service.title && String(service.title).trim()) ? service.title : '';
+                                        const hasDesc = service.description && String(service.description).trim();
+                                        const descSection = hasDesc ? `<div class="tariff-price" style="margin-bottom:0.5rem; font-size:1rem; font-weight:600; color: var(--secondary-color);">${service.description}</div>` : '';
+                                        const featuresArr = Array.isArray(service.features) ? service.features.filter(f => String(f).trim()) : [];
+                                        const featuresSection = featuresArr.length ? `<ul class="tariff-features">${featuresArr.map(f => `<li>${f}</li>`).join('')}</ul>` : '';
+                                        return `
+                                        <div class="tariff-card${featured}">
+                                        ${badge}
+                                        ${iconSection}
+                                        ${title ? `<h3>${title}</h3>` : ''}
+                                        ${descSection}
+                                        ${featuresSection}
+                                        </div>
+                                        `;
+                                    }).join('');
+                                }
+                            } else {
+                                // Fallback content if no services data
+                                servicesGrid.innerHTML = '';
+                            }
+                        }
+                    }
+                }
+
+                // Load tariffs data from backend
+                console.log('Loading tariffs data...');
+                const tariffsResponse = await fetchWithPortFallback(`/api/content/tariffs${cacheBuster}`);
+                if (tariffsResponse.ok) {
+                    const tariffsData = await tariffsResponse.json();
+                    if (tariffsData && tariffsData.plans) {
+                        const tariffContainer = document.getElementById('tariff-cards-container');
+                        if (tariffContainer && Array.isArray(tariffsData.plans)) {
+                            tariffContainer.innerHTML = tariffsData.plans.map((tariff, index) => {
+                                const icons = ['fas fa-rocket', 'fas fa-star', 'fas fa-crown'];
+                                const icon = tariff.icon || icons[index] || 'fas fa-wifi';
+                                return `
+                                <div class="tariff-card ${tariff.popular ? 'featured' : ''}">
+                                    ${tariff.popular ? '<div class="popular-badge">Populyar</div>' : ''}
+                                    <div class="tariff-icon ${tariff.popular ? 'featured-icon' : ''}">
+                                        <i class="${icon}"></i>
+                                    </div>
+                                    <h3>${tariff.name}</h3>
+                                    <div class="tariff-price">${tariff.price}₼<span>/ay</span></div>
+                                    <div class="speed">${tariff.speed || ''}</div>
+                                    <ul class="tariff-features">
+                                        ${tariff.features ? tariff.features.map(feature => `<li>${feature}</li>`).join('') : ''}
+                                    </ul>
+                                    <button class="tariff-button">Seç</button>
+                                </div>
+                            `;
+                            }).join('');
+                        }
+                    }
+                }
+
+                
+
+                // Load contact data from backend
+                console.log('Loading contact data...');
+                const contactResponse = await fetchWithPortFallback(`/api/content/contact${cacheBuster}`);
+                if (contactResponse.ok) {
+                    const contactData = await contactResponse.json();
+                    if (contactData) {
+                        const contactAddress = document.getElementById('contact-address');
+                        const contactPhonesEl = document.getElementById('contact-phones');
+                        const contactEmail = document.getElementById('contact-email');
+                        const contactHours = document.getElementById('contact-hours');
+                        
+                        if (contactAddress) contactAddress.textContent = contactData.address || 'Sumqayıt şəhəri Mərkəz Plaza 412';
+                        if (contactPhonesEl) {
+                            const phones = Array.isArray(contactData.phones) ? contactData.phones : (contactData.phone ? [contactData.phone] : []);
+                            if (phones.length) {
+                                contactPhonesEl.innerHTML = phones.map(p => `<a href="tel:${p.replace(/\s+/g,'')}">${p}</a>`).join('<br>');
+                            }
+                        }
+                        if (contactEmail) contactEmail.textContent = contactData.email || 'info@grandtelecom.az';
+                        if (contactHours) contactHours.textContent = contactData.hours || 'Hər gün';
+                    }
+                }
+
+            } catch (error) {
+                console.error('Error loading content:', error);
+                // Set fallback content if API fails
+                const heroTitle = document.getElementById('hero-title');
+                const heroSubtitle = document.getElementById('hero-subtitle');
+                const heroDescription = document.getElementById('hero-description');
+                const heroButtonsCont = document.getElementById('hero-buttons');
+                
+                if (heroTitle) heroTitle.textContent = 'Grand Telecom - Sürətli İnternet Həlləri';
+                if (heroSubtitle) heroSubtitle.textContent = 'Yüksək keyfiyyətli internet və rabitə xidmətləri';
+                if (heroDescription) heroDescription.textContent = 'Azərbaycanda ən sürətli və etibarlı internet xidməti təqdim edirik.';
+                if (heroButtonsCont) heroButtonsCont.innerHTML = `
+                    <a href="#tariffs" class="cta-button primary">Tariflər</a>
+                    <a href="#about" class="cta-button secondary">Ətraflı məlumat</a>
+                    <a href="#posts" class="cta-button secondary">Xəbərlər</a>
+                `;
+                
+                
+            }
+        }
+
+        // Contact form handling with validation
+        function initContactForm() {
+            const contactForm = document.getElementById('contact-form');
+            const formStatus = document.getElementById('form-status');
+            
+            if (contactForm) {
+                // Form validation
+                function validateField(field) {
+                    const errorElement = document.getElementById(field.name + '-error');
+                    let isValid = true;
+                    let errorMessage = '';
+                    
+                    if (field.hasAttribute('required') && !field.value.trim()) {
+                        isValid = false;
+                        errorMessage = 'Bu sahə tələb olunur';
+                    } else if (field.type === 'email' && field.value) {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        if (!emailRegex.test(field.value)) {
+                            isValid = false;
+                            errorMessage = 'Düzgün email ünvanı daxil edin';
+                        }
+                    }
+                    
+                    if (errorElement) {
+                        errorElement.textContent = errorMessage;
+                        errorElement.style.display = errorMessage ? 'block' : 'none';
+                    }
+                    
+                    field.style.borderColor = isValid ? '#e1e5e9' : '#dc3545';
+                    return isValid;
+                }
+                
+                // Add real-time validation
+                const formFields = contactForm.querySelectorAll('input, select, textarea');
+                formFields.forEach(field => {
+                    field.addEventListener('blur', () => validateField(field));
+                    field.addEventListener('input', () => {
+                        if (field.style.borderColor === 'rgb(220, 53, 69)') {
+                            validateField(field);
+                        }
+                    });
+                });
+                
+                // Note: Submit düyməsi silindiyi üçün burada yalnız sahə doğrulaması saxlanılıb.
+            }
+        }
+
+        // Language selector functionality
+        function initLanguageSelector() {
+            const languageBtn = document.getElementById('languageBtn');
+            const languageOptions = document.getElementById('languageOptions');
+            const languageDropdown = document.querySelector('.language-dropdown');
+            const currentLang = document.getElementById('currentLang');
+
+            if (languageBtn && languageOptions) {
+                languageBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    languageDropdown.classList.toggle('active');
+                });
+
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function() {
+                    languageDropdown.classList.remove('active');
+                });
+
+                // Handle language selection
+                const languageOptionElements = document.querySelectorAll('.language-option');
+                languageOptionElements.forEach(option => {
+                    option.addEventListener('click', function() {
+                        const selectedLang = this.getAttribute('data-lang');
+                        const langText = selectedLang.toUpperCase();
+                        currentLang.textContent = langText;
+                        languageDropdown.classList.remove('active');
+                        
+                        // Here you can add language switching logic
+                        console.log('Selected language:', selectedLang);
+                    });
+                });
+            }
+        }
+
+        // Load content when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            loadContent();
+            initContactForm();
+            initLanguageSelector();
+            initHeroScroll();
+        });
+    </script>
+    
+    <!-- Include required JavaScript files -->
+    <script src="js/config.js?v=4"></script>
+    <script src="js/validation.js"></script>
+    <script src="js/phoneValidation.js"></script>
+    <script src="js/imageUtils.js"></script>
+    <script type="module" src="js/apiClient.js?v=4"></script>
+</body>
+</html>

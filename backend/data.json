@@ -1,0 +1,122 @@
+{
+  "contact": {
+    "map": "",
+    "address": "Sumqayıt şəhəri Mərkəz Plaza 412",
+    "phone": "+994 504520055",
+    "email": "info@grandtelecom.az",
+    "hours": "Hər gün"
+  },
+  "about": {
+    "subtitle": "Grand Telecom haqqında məlumat",
+    "title": "Grand Telecom Haqqında",
+    "content": "<p>Grand Telecom olaraq, müştərilərimizə ən yüksək keyfiyyətli internet və rabitə xidmətləri təqdim edirik. Texnologiyanın sürətli inkişafı ilə addım-addım irəliləyərək, rəqəmsal dünyanın tələblərinə cavab veririk.</p>",
+    "mission": "Müştərilərimizə ən yüksək keyfiyyətli internet və rabitə xidmətləri təqdim etmək",
+    "vision": "Azərbaycanda rəqəmsal transformasiyanın aparıcı qüvvəsi olmaq",
+    "image": ""
+  },
+  "tariffs": {
+    "title": "Tariflər",
+    "subtitle": "Sizə uyğun tarifdən seçin",
+    "plans": [
+      {
+        "id": "basic",
+        "name": "Əsas Tarif",
+        "price": "25",
+        "currency": "AZN",
+        "period": "ay",
+        "speed": "50 Mbps",
+        "features": [
+          "50 Mbps sürət",
+          "Limitsiz internet",
+          "24/7 dəstək",
+          "Pulsuz quraşdırma"
+        ],
+        "popular": false
+      },
+      {
+        "id": "premium",
+        "name": "Premium Tarif",
+        "price": "45",
+        "currency": "AZN",
+        "period": "ay",
+        "speed": "100 Mbps",
+        "features": [
+          "100 Mbps sürət",
+          "Limitsiz internet",
+          "24/7 dəstək",
+          "Pulsuz quraşdırma",
+          "Wi-Fi router daxil"
+        ],
+        "popular": true
+      },
+      {
+        "id": "business",
+        "name": "Biznes Tarif",
+        "price": "80",
+        "currency": "AZN",
+        "period": "ay",
+        "speed": "200 Mbps",
+        "features": [
+          "200 Mbps sürət",
+          "Limitsiz internet",
+          "24/7 prioritet dəstək",
+          "Pulsuz quraşdırma",
+          "Wi-Fi router daxil",
+          "Statik IP ünvan"
+        ],
+        "popular": false
+      }
+    ]
+  },
+  "services": {
+    "title": "Xidmətlərimiz",
+    "subtitle": "Sizə təklif etdiyimiz xidmətlər",
+    "items": [
+      {
+        "id": "internet",
+        "title": "Yüksək Sürətli İnternet",
+        "description": "Limitsiz yüksək sürətli internet xidməti",
+        "icon": "fas fa-wifi",
+        "features": [
+          "Limitsiz trafik",
+          "Sürətli quraşdırma"
+        ]
+      },
+      {
+        "id": "tv",
+        "title": "Rəqəmsal TV",
+        "description": "HD keyfiyyətində televiziya kanalları",
+        "icon": "fas fa-tv",
+        "features": [
+          "HD kanallar",
+          "Geniş seçim",
+          "İnteraktiv xidmətlər"
+        ]
+      }
+    ]
+  },
+  "homepage": {
+    "hero": {
+      "title": "Grand Telecom - Sürətli İnternet Həlləri",
+      "subtitle": "Yüksək keyfiyyətli internet və rabitə xidmətləri",
+      "description": "Azərbaycanda ən sürətli və etibarlı internet xidməti təqdim edirik.",
+      "button_text": "Tariflərə bax",
+      "background_image": "",
+      "features": [
+        {
+          "icon": "⚡",
+          "text": "Yüksək Sürət"
+        },
+        {
+          "icon": "🛡️",
+          "text": "Etibarlı Xidmət"
+        }
+      ]
+    },
+    "alert": {
+      "text": "",
+      "type": ""
+    }
+  },
+  "users": []
+}

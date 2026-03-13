@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Haqqımızda - Grand Telecom</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .about-hero {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #3498db 100%);
+            color: var(--white);
+            padding: 8rem 0 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .about-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.2;
+        }
+
+        .about-hero-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .about-hero h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .about-hero p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+
+        .about-main {
+            padding: 5rem 0;
+            background: var(--white);
+        }
+
+        .about-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            margin-bottom: 5rem;
+            align-items: center;
+        }
+
+        .about-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--dark-gray);
+        }
+
+        .about-text h2 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 2rem;
+        }
+
+        .about-image {
+            text-align: center;
+        }
+
+        .about-image img {
+            max-width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .values-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 5rem 0;
+            margin: 5rem 0;
+            border-radius: 20px;
+        }
+
+        .values-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .value-card {
+            background: var(--white);
+            padding: 3rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            border-top: 4px solid var(--primary-color);
+        }
+
+        .value-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .value-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            display: block;
+        }
+
+        .value-card h3 {
+            font-size: 1.8rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .value-card p {
+            color: var(--dark-gray);
+            line-height: 1.6;
+        }
+
+        .stats-section {
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 4rem 0;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .stat-item {
+            padding: 2rem;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .about-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .values-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+            
+            .about-hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .about-text h2 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <a href="index.html" class="logo">
+                <img src="Best1.svg" alt="" class="logo-img">
+                <img src="Best2.svg" alt="Grand Telecom" class="logo-text">
+            </a>
+            
+            <div class="burger">
+                <div class="line1"></div>
+                <div class="line2"></div>
+                <div class="line3"></div>
+            </div>
+            <ul class="nav-links">
+                <li><a href="index.html#home">Əsas Səhifə</a></li>
+                <li><a href="index.html#services">Xidmətlər</a></li>
+                <li><a href="index.html#tariffs">Tariflər</a></li>
+                <li><a href="about.html" class="active">Haqqımızda</a></li>
+                <li><a href="index.html#contact">Əlaqə</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="about-hero">
+            <div class="about-hero-content">
+                <h1 id="about-title">Grand Telecom Haqqında</h1>
+                <p id="about-description">Azərbaycanda rəqəmsal transformasiyanın aparıcı qüvvəsi olmaq və müştərilərimizin həyatını texnologiya vasitəsilə asanlaşdırmaq.</p>
+            </div>
+        </section>
+
+        <section class="about-main">
+            <div class="about-container">
+                <div class="about-grid">
+                    <div class="about-text">
+                        <h2>Bizim Hekayəmiz</h2>
+                        <div id="about-content">
+                            <p>Grand Telecom olaraq, müştərilərimizə ən yüksək keyfiyyətli internet və rabitə xidmətləri təqdim edirik. Texnologiyanın sürətli inkişafı ilə addım-addım irəliləyərək, rəqəmsal dünyanın tələblərinə cavab veririk.</p>
+                            
+                            <p>Şirkətimiz müasir texnologiyalar və innovativ həllərlə Azərbaycan bazarında öz yerini möhkəmləndirmişdir. Müştəri məmnuniyyəti bizim əsas prioritetimizdir.</p>
+                        </div>
+                    </div>
+                    <div class="about-image">
+                        <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" alt="Grand Telecom Ofis" id="about-image">
+                    </div>
+                </div>
+
+                <div class="values-section">
+                    <div class="values-grid">
+                        <div class="value-card">
+                            <span class="value-icon">🎯</span>
+                            <h3>Missiyamız</h3>
+                            <p id="mission-text">Müştərilərimizə ən yüksək keyfiyyətli internet və rabitə xidmətləri təqdim etmək, onların rəqəmsal ehtiyaclarını qarşılamaq və texnoloji inkişafda öncü olmaq.</p>
+                        </div>
+                        <div class="value-card">
+                            <span class="value-icon">🚀</span>
+                            <h3>Vizyonumuz</h3>
+                            <p id="vision-text">Azərbaycanda rəqəmsal transformasiyanın aparıcı qüvvəsi olmaq və müştərilərimizin həyatını texnologiya vasitəsilə asanlaşdırmaq.</p>
+                        </div>
+                        <div class="value-card">
+                            <span class="value-icon">⭐</span>
+                            <h3>Dəyərlərimiz</h3>
+                            <div id="values-list"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="stats-section">
+                    <h2 style="margin-bottom: 3rem;">Rəqəmlərlə Grand Telecom</h2>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-number">1000+</span>
+                            <span class="stat-label">Məmnun Müştəri</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">99.9%</span>
+                            <span class="stat-label">Xidmət Keyfiyyəti</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">24/7</span>
+                            <span class="stat-label">Texniki Dəstək</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number">5+</span>
+                            <span class="stat-label">İllik Təcrübə</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Grand Telecom</h3>
+                <p>Azərbaycanda ən etibarlı internet xidməti təqdim edən şirkət.</p>
+                <div class="social-icons">
+                    <a href="#" class="social-icon">fb</a>
+                    <a href="#" class="social-icon">tw</a>
+                    <a href="#" class="social-icon">ig</a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Grand Telecom. Bütün hüquqlar qorunur.</p>
+        </div>
+    </footer>
+
+    <script src="js/config.js"></script>
+    <script>
+        // Suppress Chrome extension runtime errors
+        (function() {
+            const originalConsoleError = console.error;
+            console.error = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('runtime.lastError') || message.includes('message port closed')) {
+                    return;
+                }
+                originalConsoleError.apply(console, args);
+            };
+        })();
+
+        // Load about data from backend
+        async function loadAboutData() {
+            try {
+                const base = (window.CONFIG && CONFIG.API_BASE_URL) ? CONFIG.API_BASE_URL.replace(/\/$/, '') : '';
+                const url = base.endsWith('/api') ? `${base}/content/about` : `${base}/api/content/about`;
+                const response = await fetch(url);
+                if (response.ok) {
+                    const aboutData = await response.json();
+                    if (aboutData) {
+                        // Function to decode HTML entities
+                        function decodeHtml(html) {
+                            const txt = document.createElement('textarea');
+                            txt.innerHTML = html;
+                            return txt.value;
+                        }
+                        
+                        // Update page content
+                        if (aboutData.title) {
+                            document.getElementById('about-title').textContent = aboutData.title;
+                        }
+                        
+                        if (aboutData.content) {
+                            const decodedContent = decodeHtml(aboutData.content);
+                            document.getElementById('about-content').innerHTML = decodedContent;
+                        }
+                        
+                        if (aboutData.mission) {
+                            document.getElementById('mission-text').textContent = aboutData.mission;
+                        }
+                        
+                        if (aboutData.vision) {
+                            document.getElementById('vision-text').textContent = aboutData.vision;
+                        }
+                        
+                        if (aboutData.image) {
+                            document.getElementById('about-image').src = aboutData.image;
+                        }
+                        // Render values list
+                        const valuesList = document.getElementById('values-list');
+                        if (valuesList) {
+                            const vals = Array.isArray(aboutData.values) ? aboutData.values : [];
+                            valuesList.innerHTML = vals.length
+                                ? vals.map(v => `<div class="about-value-item"><h4>${(v.title||'')}</h4><p>${(v.description||'')}</p></div>`).join('')
+                                : '<p>—</p>';
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('Could not load about data from backend, using defaults');
+            }
+        }
+
+        // Mobile menu functionality
+        const burger = document.querySelector('.burger');
+        const nav = document.querySelector('.nav-links');
+
+        if (burger) {
+            burger.addEventListener('click', () => {
+                nav.classList.toggle('nav-active');
+                burger.classList.toggle('toggle');
+            });
+        }
+
+        // Load content when page loads
+        document.addEventListener('DOMContentLoaded', loadAboutData);
+    </script>
+    
+    <!-- Include required JavaScript files -->
+    <script src="js/config.js"></script>
+</body>
+</html>

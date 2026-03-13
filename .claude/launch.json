@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Frontend",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["-e", "const http=require('http'),fs=require('fs'),path=require('path');const s=http.createServer((req,res)=>{const u=new URL(req.url,`http://localhost`);const p=u.pathname;let f=path.join('D:/Grand/HTML',p==='/'?'/index.html':p);try{const d=fs.readFileSync(f);const ext=path.extname(f);const m={'html':'text/html','css':'text/css','js':'text/javascript','svg':'image/svg+xml','ico':'image/x-icon','json':'application/json','png':'image/png','jpg':'image/jpeg'};res.writeHead(200,{'Content-Type':m[ext.slice(1)]||'text/plain'});res.end(d);}catch(e){res.writeHead(404);res.end('Not found');}});s.listen(5500,()=>console.log('Server on 5500'));"],
+      "port": 5500
+    }
+  ]
+}
