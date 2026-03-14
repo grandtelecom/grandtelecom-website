@@ -1556,16 +1556,18 @@
                 try { console.log('[Auth] Cookies:', document.cookie || '(empty)'); } catch(_) {}
                 console.log('[API] Base:', API);
                 if (!token) {
-                    // Only redirect if we are on admin panel page, but wait briefly to avoid race conditions
-                    if (location.pathname.endsWith('admin-panel.html')) {
+                    // httpOnly cookie auth: csrf_token cookie mövcuddursa, session aktivdir — redirect etmə
+                    var hasCookieAuth = document.cookie.indexOf('csrf_token=') !== -1;
+                    if (!hasCookieAuth && location.pathname.endsWith('admin-panel.html')) {
                         var attempts = 0;
                         var maxAttempts = 5; // ~750ms total
                         var interval = setInterval(function(){
                             attempts++;
                             token = getToken();
-                            if (token || attempts >= maxAttempts) {
+                            var cookieNow = document.cookie.indexOf('csrf_token=') !== -1;
+                            if (token || cookieNow || attempts >= maxAttempts) {
                                 clearInterval(interval);
-                                if (!token) {
+                                if (!token && !cookieNow) {
                                     location.href = 'login.html';
                                 }
                             }
@@ -1711,13 +1713,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Əsas token yoxlaması
     const checkAuth = () => {
         // Əvvəlcə bütün mümkün token yerlərini yoxla
-        const token = localStorage.getItem('authToken') || 
+        const token = localStorage.getItem('authToken') ||
                      localStorage.getItem('auth_token') ||
                      localStorage.getItem('token') ||
                      (localStorage.getItem('user') && JSON.parse(localStorage.getItem('user')).token);
-        
+        // httpOnly cookie auth: csrf_token cookie mövcuddursa, session aktivdir
+        const hasCookieAuth = document.cookie.indexOf('csrf_token=') !== -1;
         console.log('Auth token yoxlanılır...');
-        return !!token;
+        return !!token || hasCookieAuth;
     };
 
     // İlk yoxlama
@@ -1953,10 +1956,12 @@ function initializePage() {
 function initializeAuth() {
     // Əsas token yoxlaması
     const checkAuth = () => {
-        const token = localStorage.getItem('authToken') || 
+        const token = localStorage.getItem('authToken') ||
                      localStorage.getItem('auth_token') ||
                      (localStorage.getItem('user') && JSON.parse(localStorage.getItem('user')).token);
-        return !!token;
+        // httpOnly cookie auth: csrf_token cookie mövcuddursa, session aktivdir
+        const hasCookieAuth = document.cookie.indexOf('csrf_token=') !== -1;
+        return !!token || hasCookieAuth;
     };
 
     // İlk yoxlama
