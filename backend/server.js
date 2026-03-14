@@ -320,13 +320,17 @@ const globalLimiter = rateLimit({
 
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 15,
+    max: 60,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Çox sayda giriş cəhdi. 15 dəqiqə sonra cəhd edin.' }
 });
 
-app.use(globalLimiter);
+// /api/health global limiter-dən azaddır (status yoxlaması)
+app.use((req, res, next) => {
+    if (req.path === '/api/health' || req.path === '/health') return next();
+    globalLimiter(req, res, next);
+});
 app.use('/api/login', authLimiter);
 
 // #10: CSRF middleware — login/logout/refresh/verify exempt; all other mutating routes protected
