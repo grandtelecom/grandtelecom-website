@@ -345,10 +345,7 @@
         
         // Wire up create user button if present
         initCreateUser();
-        
-        // Load initial data
-        checkAuth();
-        
+
         console.log('Admin panel initialized');
     });
 
