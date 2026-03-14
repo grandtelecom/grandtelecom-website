@@ -299,7 +299,8 @@ class ApiClient {
             this._isRefreshing = true;
             
             const currentToken = this.getAuthToken();
-            if (!currentToken) {
+            const hasCookie = document.cookie.includes('auth_token=');
+            if (!currentToken && !hasCookie) {
                 console.warn('No auth token available for refresh');
                 return false;
             }
@@ -433,7 +434,9 @@ class ApiClient {
             
             // Handle query parameters
             if (options.params) {
-                const urlObj = new URL(fullUrl);
+                const urlObj = fullUrl.startsWith('http')
+                ? new URL(fullUrl)
+                : new URL(fullUrl, window.location.origin);
                 Object.entries(options.params).forEach(([key, value]) => {
                     if (value !== undefined && value !== null) {
                         if (Array.isArray(value)) {
@@ -545,7 +548,10 @@ class ApiClient {
         const cleanPath = path.startsWith('/') ? path : `/${path}`;
         
         // Build URL with query parameters
-        const url = new URL(this.getBaseUrl() + cleanPath);
+        const rawUrl548 = this.getBaseUrl() + cleanPath;
+        const url = rawUrl548.startsWith('http')
+            ? new URL(rawUrl548)
+            : new URL(rawUrl548, window.location.origin);
         
         // Add query parameters
         Object.entries(params).forEach(([key, value]) => {
