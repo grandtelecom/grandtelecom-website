@@ -31,12 +31,16 @@ class ApiClient {
             }
         } catch (_) {}
         
-        // Common localhost variants (ensure /api suffix)
-        push('http://localhost:3001/api');
-        push('http://127.0.0.1:3001/api');
-        push('http://localhost:3002/api');
-        push('http://127.0.0.1:3002/api');
-        push('http://localhost:3000/api');
+        // Common localhost variants — yalnız local development üçün
+        const isLocal = typeof window !== 'undefined' &&
+            ['localhost','127.0.0.1','0.0.0.0','::1'].includes(window.location.hostname);
+        if (isLocal) {
+            push('http://localhost:3001/api');
+            push('http://127.0.0.1:3001/api');
+            push('http://localhost:3002/api');
+            push('http://127.0.0.1:3002/api');
+            push('http://localhost:3000/api');
+        }
         
         // Keep only unique values and only those ending with /api
         this.fallbackUrls = Array.from(new Set(candidates)).filter(u => /\/api$/.test(u));
