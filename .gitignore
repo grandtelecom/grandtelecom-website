@@ -1,6 +1,4 @@
-node_modules
-.env
-backend/.env
-*.env.local
-uploads/
-backend/data/
+node_modules/
+.idea/
+.claude/
+backend/node_modules/

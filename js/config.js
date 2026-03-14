@@ -25,7 +25,7 @@
   // Əsas konfiqurasiya obyekti
   const CONFIG = {
     // Ümumi icazə verilən bölmələr (frontend doğrulama üçün)
-    ALLOWED_SECTIONS: ['about', 'contact', 'services', 'home', 'news', 'gallery'],
+    ALLOWED_SECTIONS: ['about', 'contact', 'campaigns', 'home', 'news', 'gallery'],
     // Fayl ölçüsü limiti (5MB) — frontend doğrulama üçün
     MAX_FILE_SIZE: 5 * 1024 * 1024,
 

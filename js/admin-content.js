@@ -17,6 +17,123 @@ if (window.adminContentInitialized) {
   // Initialize API client with proper base URL
   const api = new ApiClient(CONFIG.API_BASE_URL.replace(/\/api$/, '') + '/api');
 
+  // ----- ICON PICKER -----
+  const ICON_LIST = [
+    { cls: 'fas fa-tag',          label: 'Endirim'   },
+    { cls: 'fas fa-bolt',         label: 'Sürət'     },
+    { cls: 'fas fa-gift',         label: 'Hədiyyə'   },
+    { cls: 'fas fa-star',         label: 'Ulduz'     },
+    { cls: 'fas fa-fire',         label: 'İsti'      },
+    { cls: 'fas fa-percent',      label: 'Faiz'      },
+    { cls: 'fas fa-wifi',         label: 'WiFi'      },
+    { cls: 'fas fa-phone',        label: 'Telefon'   },
+    { cls: 'fas fa-home',         label: 'Ev'        },
+    { cls: 'fas fa-users',        label: 'Ailə'      },
+    { cls: 'fas fa-crown',        label: 'Premium'   },
+    { cls: 'fas fa-rocket',       label: 'Sürətli'   },
+    { cls: 'fas fa-clock',        label: 'Vaxt'      },
+    { cls: 'fas fa-medal',        label: 'Medal'     },
+    { cls: 'fas fa-globe',        label: 'İnternet'  },
+    { cls: 'fas fa-tv',           label: 'TV'        },
+    { cls: 'fas fa-mobile-alt',   label: 'Mobil'     },
+    { cls: 'fas fa-shield-alt',   label: 'Güvənli'   },
+    { cls: 'fas fa-infinity',     label: 'Limitsiz'  },
+    { cls: 'fas fa-chart-line',   label: 'Artım'     },
+    { cls: 'fas fa-thumbs-up',    label: 'Bəyən'     },
+    { cls: 'fas fa-handshake',    label: 'Müqavilə'  },
+    { cls: 'fas fa-check-circle', label: 'Yoxlama'   },
+    { cls: 'fas fa-dollar-sign',  label: 'Qiymət'    },
+  ];
+
+  if (!window._iconPickerDocListener) {
+    window._iconPickerDocListener = true;
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.icon-picker-popup').forEach(p => { p.style.display = 'none'; });
+    });
+  }
+
+  function createIconPicker(inputCls, currentValue) {
+    const wrapper = document.createElement('div');
+    wrapper.style.cssText = 'position:relative;width:100%;';
+
+    const hidden = document.createElement('input');
+    hidden.type  = 'hidden';
+    hidden.className = inputCls;
+    hidden.value = currentValue || '';
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = 'display:flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;width:100%;font-size:12px;overflow:hidden;white-space:nowrap;';
+
+    function refreshBtn() {
+      const v = hidden.value;
+      if (v) {
+        const name = v.replace(/fa[srb] fa-/,'');
+        btn.innerHTML = `<i class="${escHtml(v)}" style="font-size:15px;color:#1a237e;width:18px;text-align:center;flex-shrink:0;"></i><span style="flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;">${escHtml(name)}</span><span style="color:#aaa;font-size:10px;flex-shrink:0;">▾ dəyiş</span>`;
+      } else {
+        btn.innerHTML = `<span style="color:#aaa;flex:1;">İkon seç...</span><span style="color:#aaa;font-size:10px;">▾</span>`;
+      }
+    }
+    refreshBtn();
+
+    const popup = document.createElement('div');
+    popup.className = 'icon-picker-popup';
+    popup.style.cssText = 'display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:99999;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 6px 24px rgba(0,0,0,.14);padding:10px;width:300px;max-height:260px;overflow-y:auto;';
+
+    const search = document.createElement('input');
+    search.type = 'text';
+    search.placeholder = 'Axtar... (wifi, hədiyyə, sürət)';
+    search.style.cssText = 'width:100%;padding:5px 8px;border:1px solid #e5e7eb;border-radius:6px;font-size:12px;margin-bottom:8px;box-sizing:border-box;';
+    popup.appendChild(search);
+
+    const grid = document.createElement('div');
+    grid.style.cssText = 'display:grid;grid-template-columns:repeat(5,1fr);gap:5px;';
+
+    function drawIcons(q) {
+      grid.innerHTML = '';
+      const list = q ? ICON_LIST.filter(i => i.label.toLowerCase().includes(q.toLowerCase()) || i.cls.includes(q.toLowerCase())) : ICON_LIST;
+      if (!list.length) {
+        grid.innerHTML = '<p style="grid-column:1/-1;font-size:12px;color:#999;text-align:center;padding:8px;">Tapılmadı</p>';
+        return;
+      }
+      list.forEach(icon => {
+        const cell = document.createElement('button');
+        cell.type  = 'button';
+        cell.title = icon.label;
+        const sel  = hidden.value === icon.cls;
+        cell.style.cssText = `display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 4px;border:1.5px solid ${sel?'#1a237e':'#e5e7eb'};border-radius:7px;background:${sel?'#eef0fb':'#fafafa'};cursor:pointer;transition:border-color .15s;`;
+        cell.innerHTML = `<i class="${icon.cls}" style="font-size:17px;color:#1a237e;"></i><span style="font-size:9px;color:#555;text-align:center;line-height:1.2;">${icon.label}</span>`;
+        cell.addEventListener('click', e => {
+          e.stopPropagation();
+          hidden.value = icon.cls;
+          refreshBtn();
+          popup.style.display = 'none';
+        });
+        grid.appendChild(cell);
+      });
+    }
+    drawIcons('');
+    popup.appendChild(grid);
+    search.addEventListener('input', () => drawIcons(search.value.trim()));
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const wasOpen = popup.style.display !== 'none';
+      document.querySelectorAll('.icon-picker-popup').forEach(p => { p.style.display = 'none'; });
+      if (!wasOpen) {
+        popup.style.display = 'block';
+        search.value = '';
+        drawIcons('');
+        setTimeout(() => search.focus(), 50);
+      }
+    });
+
+    wrapper.appendChild(hidden);
+    wrapper.appendChild(btn);
+    wrapper.appendChild(popup);
+    return wrapper;
+  }
+
   function getToken() {
     try {
       return localStorage.getItem('auth_token') || localStorage.getItem('authToken') || '';
@@ -56,7 +173,7 @@ if (window.adminContentInitialized) {
       </div>
       <div class="plan-row">
         <div><label>Sürət</label><input type="text" class="form-control plan-speed"></div>
-        <div><label>Icon (FA klass və ya boş)</label><input type="text" class="form-control plan-icon"></div>
+        <div><label>İkon</label><div class="icon-picker-slot"></div></div>
       </div>
       <div class="plan-row single">
         <label style="display:flex; align-items:center; gap:6px;">
@@ -69,8 +186,8 @@ if (window.adminContentInitialized) {
     card.querySelector('.plan-name').value = plan.name || '';
     card.querySelector('.plan-price').value = plan.price || '';
     card.querySelector('.plan-speed').value = plan.speed || '';
-    card.querySelector('.plan-icon').value = plan.icon || '';
     card.querySelector('.plan-popular').checked = !!plan.popular;
+    card.querySelector('.icon-picker-slot').appendChild(createIconPicker('plan-icon', plan.icon || ''));
     card.querySelector('.remove-plan').addEventListener('click', () => card.remove());
     const listEl = card.querySelector('.features-list');
     const feats = Array.isArray(plan.features) ? plan.features : [];
@@ -521,29 +638,27 @@ if (window.adminContentInitialized) {
     container.appendChild(row);
   }
 
-  // ----- SERVICES -----
-  function renderServiceItem(container, item) {
+  // ----- CAMPAIGNS -----
+  function renderCampaignItem(container, item) {
     const wrap = document.createElement('div');
     wrap.className = 'svc-item';
     wrap.style.cssText = 'border:1px solid #e5e7eb; border-radius:8px; padding:8px; background:#fff; display:flex; flex-direction:column; gap:6px;';
     wrap.innerHTML = `
-      <div class="svc-grid" style="display:grid; grid-template-columns: 1fr 2fr auto; gap:6px; align-items:center;">
-        <input type="text" class="form-control svc-icon" placeholder="FA klass (məs. fas fa-wifi)" style="min-width:0;">
-        <input type="text" class="form-control svc-title" placeholder="Başlıq" style="min-width:0;">
-        <label style="display:flex; align-items:center; gap:6px; justify-content:flex-end; white-space:nowrap;">
-          <input type="checkbox" class="svc-popular"> Populyar
-        </label>
+      <div class="svc-grid" style="display:grid; grid-template-columns: 1fr 2fr 1fr; gap:6px; align-items:start;">
+        <div class="icon-picker-slot" style="min-width:0;"></div>
+        <input type="text" class="form-control svc-title" placeholder="Kampaniya adı" style="min-width:0;">
+        <input type="text" class="form-control svc-badge" placeholder="Badge (Yeni, Endirim)" style="min-width:0;">
         <textarea class="form-control svc-desc" placeholder="Qısa təsvir" rows="1" style="grid-column: 1 / -1; resize: vertical; min-height:28px;"></textarea>
         <div class="svc-features" style="grid-column: 1 / -1; display:flex; flex-direction:column; gap:6px;"></div>
       </div>
       <div class="svc-actions" style="display:flex; gap:6px; justify-content:flex-end; width:100%; margin-top:2px;">
-        <button type="button" class="btn btn-secondary svc-add-feature" style="padding:4px 10px;">Xüsusiyyət əlavə et</button>
+        <button type="button" class="btn btn-secondary svc-add-feature" style="padding:4px 10px;">Şərt əlavə et</button>
         <button type="button" class="btn btn-secondary remove" style="padding:4px 10px;">Sil</button>
       </div>
     `;
-    wrap.querySelector('.svc-icon').value = item.icon || '';
+    wrap.querySelector('.icon-picker-slot').appendChild(createIconPicker('svc-icon', item.icon || ''));
     wrap.querySelector('.svc-title').value = item.title || '';
-    wrap.querySelector('.svc-popular').checked = !!item.popular;
+    wrap.querySelector('.svc-badge').value = item.badge || '';
     wrap.querySelector('.svc-desc').value = item.description || '';
     // Handlers
     const featsWrap = wrap.querySelector('.svc-features');
@@ -556,7 +671,7 @@ if (window.adminContentInitialized) {
       const fi = document.createElement('input');
       fi.type = 'text';
       fi.className = 'form-control svc-feature-text';
-      fi.placeholder = 'Xüsusiyyət';
+      fi.placeholder = 'Şərt / üstünlük';
       fi.style.minWidth = '0';
       fi.value = text || '';
       const fb = document.createElement('button');
@@ -576,93 +691,81 @@ if (window.adminContentInitialized) {
     container.appendChild(wrap);
   }
 
-  async function loadServicesForm() {
+  async function loadCampaignsForm() {
     try {
-      const data = await api.get('/content/services');
-      document.getElementById('services-title') && (document.getElementById('services-title').value = data.title || 'Xidmətlərimiz');
-      document.getElementById('services-subtitle') && (document.getElementById('services-subtitle').value = data.subtitle || 'Sizə təklif etdiyimiz xidmətlər');
-      const cont = document.getElementById('services-container');
+      const data = await api.get('/content/campaigns');
+      document.getElementById('campaigns-title') && (document.getElementById('campaigns-title').value = data.title || 'Kampaniyalarımız');
+      document.getElementById('campaigns-subtitle') && (document.getElementById('campaigns-subtitle').value = data.subtitle || 'Sizə təklif etdiyimiz kampaniyalar');
+      const cont = document.getElementById('campaigns-container');
       if (cont) {
         cont.innerHTML = '';
         const items = Array.isArray(data.items) ? data.items : [];
         if (items.length) {
-          items.forEach(it => renderServiceItem(cont, it));
+          items.forEach(it => renderCampaignItem(cont, it));
         } else {
-          seedServicesUI();
+          seedCampaignsUI();
         }
       }
-    } catch (e) { console.error('Services load failed', e); }
+    } catch (e) { console.error('Campaigns load failed', e); }
   }
 
-  function bindServicesForm() {
-    const addBtn = document.getElementById('add-service');
-    const cont = document.getElementById('services-container');
-    if (addBtn && cont) addBtn.addEventListener('click', () => renderServiceItem(cont, { iconType:'fa', icon:'fas fa-wifi', title:'', description:'' }));
+  function bindCampaignsForm() {
+    const addBtn = document.getElementById('add-campaign');
+    const cont = document.getElementById('campaigns-container');
+    if (addBtn && cont) addBtn.addEventListener('click', () => renderCampaignItem(cont, { icon:'fas fa-tag', title:'', description:'', badge:'' }));
 
-    const form = document.getElementById('services-form');
+    const form = document.getElementById('campaigns-form');
     if (form) {
-      // Prevent Enter key from accidentally submitting while editing
       form.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !(e.target && (e.target.tagName === 'TEXTAREA' || e.target.type === 'submit'))) {
           e.preventDefault();
         }
       });
 
-      // Bind resets (top and bottom buttons)
-      const resetTop = document.getElementById('reset-services');
-      const resetBottom = document.getElementById('reset-services-bottom');
-      const doReset = (e) => { e.preventDefault(); seedServicesUI(); };
+      const resetTop = document.getElementById('reset-campaigns');
+      const resetBottom = document.getElementById('reset-campaigns-bottom');
+      const doReset = (e) => { e.preventDefault(); seedCampaignsUI(); };
       if (resetTop) resetTop.addEventListener('click', doReset);
       if (resetBottom) resetBottom.addEventListener('click', doReset);
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
         try {
-          const items = Array.from(document.querySelectorAll('#services-container .svc-item')).map(row => {
+          const items = Array.from(document.querySelectorAll('#campaigns-container .svc-item')).map(row => {
             const features = Array.from(row.querySelectorAll('.svc-feature-text')).map(i => (i.value || '').trim()).filter(Boolean);
             return {
               icon: row.querySelector('.svc-icon')?.value || '',
               title: row.querySelector('.svc-title')?.value || '',
               description: row.querySelector('.svc-desc')?.value || '',
-              popular: !!row.querySelector('.svc-popular')?.checked,
+              badge: (row.querySelector('.svc-badge')?.value || '').trim(),
               features
             };
           });
           const payload = {
-            title: document.getElementById('services-title')?.value || 'Xidmətlərimiz',
-            subtitle: document.getElementById('services-subtitle')?.value || 'Sizə təklif etdiyimiz xidmətlər',
+            title: document.getElementById('campaigns-title')?.value || 'Kampaniyalarımız',
+            subtitle: document.getElementById('campaigns-subtitle')?.value || 'Sizə təklif etdiyimiz kampaniyalar',
             items
           };
-          await api.post('/content/services', payload);
-          alert('Xidmətlər yadda saxlandı');
+          await api.post('/content/campaigns', payload);
+          alert('Kampaniyalar yadda saxlandı');
         } catch (e2) { console.error(e2); alert('Xəta: ' + (e2.message||'')); }
       });
     }
   }
 
-  // Defaults matching common services
-  function getDefaultServices() {
+  function getDefaultCampaigns() {
     return [
-      { iconType:'fa', icon:'fas fa-wifi',  title:'Fiber İnternet', description:'Yüksək sürətli fiber optik internet xidməti.', popular:true,  features:['1 Gbps-ə qədər sürət','Limitsiz trafik','24/7 texniki dəstək','Pulsuz quraşdırma'] },
-      { iconType:'fa', icon:'fas fa-tv',    title:'IPTV Xidməti',   description:'200+ kanal, HD keyfiyyət və interaktiv TV.',   popular:false, features:['200+ HD kanal','Video on Demand','Timeshift funksiyası','Mobil tətbiq dəstəyi'] },
-      { iconType:'fa', icon:'fas fa-phone', title:'VoIP Telefon',   description:'Rəqəmsal telefon xidməti və əlavə funksiyalar.', popular:false, features:['Aşağı tariflər','Beynəlxalq zənglər','Zəng yönləndirmə','Səsli poçt'] }
+      { icon:'fas fa-tag',    title:'Yaz Endirimi',      description:'Yeni abunəçilər üçün ilk 3 ay 20% endirim.', badge:'Yeni',    features:['Qeydiyyat tələb olunur','1 il müqavilə','Pulsuz quraşdırma'] },
+      { icon:'fas fa-gift',   title:'Ailəvi Paket',      description:'4 istifadəçiyə qədər eyni tarifə qoşulun.',  badge:'Populyar', features:['4-ə qədər istifadəçi','Ortaq internet paketi','Aylıq ödəniş'] },
+      { icon:'fas fa-bolt',   title:'Sürət Yüksəltmə',  description:'Mövcud tarifinizdə sürəti 2 dəfə artırın.', badge:'',         features:['Mövcud abunəçilər üçün','Dərhal aktivləşmə','Əlavə ödəniş yoxdur'] }
     ];
   }
 
-  function seedServicesUI() {
-    const cont = document.getElementById('services-container');
+  function seedCampaignsUI() {
+    const cont = document.getElementById('campaigns-container');
     if (!cont) return;
     cont.innerHTML = '';
-    const defs = getDefaultServices();
-    defs.forEach(it => renderServiceItem(cont, it));
-  }
-
-  // Public helper: create a new service card
-  function createNewService(item = { iconType:'fa', icon:'', emoji:'', image:'', title:'', description:'', popular:false, features:[] }) {
-    const cont = document.getElementById('services-container');
-    if (!cont) { console.warn('services-container not found'); return; }
-    renderServiceItem(cont, item);
-    try { cont.lastElementChild?.scrollIntoView({ behavior:'smooth', block:'center' }); } catch(_) {}
+    getDefaultCampaigns().forEach(it => renderCampaignItem(cont, it));
   }
 
   function bindContactForm() {
@@ -758,12 +861,12 @@ if (window.adminContentInitialized) {
     try {
       bindHomepageForm();
       bindAboutForm();
-      bindServicesForm();
+      bindCampaignsForm();
       bindTariffsForm();
       bindContactForm();
       loadHomepageForm();
       loadAboutForm();
-      loadServicesForm();
+      loadCampaignsForm();
       loadTariffsForm();
       loadContactForm();
 

@@ -109,10 +109,23 @@ h1,h2,h3,h4,h5,h6 { line-height: 1.25; font-weight: 700; margin-bottom: .75rem; 
 
 .section { padding: 5rem 0; scroll-margin-top: var(--nav-h); }
 
+/* ── Bütün əsas sectionlar eyni ölçüdə ────────────────────────────────────── */
+.hero,
+.campaigns,
+.tariffs,
+.about,
+.contact-section {
+    min-height: calc(100vh - var(--nav-h));
+    scroll-margin-top: var(--nav-h);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
 /* Shared section header */
 .section-header {
     text-align: center;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
 }
 .section-header h2 {
     font-size: clamp(1.8rem, 3.5vw, 2.8rem);
@@ -612,21 +625,93 @@ main { margin-top: 0; padding: 0; }
     clip-path: ellipse(60% 100% at 50% 100%);
 }
 
-/* ─── 9. SERVICES SECTION ────────────────────────────────────────────────── */
-.services {
+/* ─── 9. CAMPAIGNS SECTION ───────────────────────────────────────────────── */
+.campaigns {
     background: var(--white);
-    padding: 5rem 0 6rem;
+    padding: 2rem 0 3.5rem;
+    box-sizing: border-box;
 }
-.services-content {
+.campaigns-content {
     max-width: var(--max-w);
+    width: 100%;
     margin: 0 auto;
     padding: 0 1.5rem;
+    box-sizing: border-box;
 }
-.services-grid {
+.campaigns-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
     gap: 1.5rem;
     margin-top: 1rem;
+}
+.campaign-card { position: relative; }
+.campaign-badge {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+}
+
+/* Campaign cards: həmişə açıq fon — featured dark stil ləğv edilir */
+.campaign-card,
+.campaign-card.featured {
+    background: var(--white) !important;
+    color: var(--dark-color) !important;
+}
+.campaign-card.featured::before {
+    background: linear-gradient(90deg, var(--primary-light), var(--accent-cyan)) !important;
+    height: 3px;
+}
+.campaign-card h3,
+.campaign-card.featured h3 {
+    color: var(--primary-color) !important;
+}
+.campaign-card .tariff-icon,
+.campaign-card.featured .tariff-icon {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-light)) !important;
+    box-shadow: 0 4px 16px rgba(26,35,126,.25) !important;
+}
+.campaign-card .tariff-price,
+.campaign-card.featured .tariff-price       { color: var(--primary-color) !important; }
+.campaign-card .tariff-price span,
+.campaign-card.featured .tariff-price span  { color: var(--gray) !important; }
+.campaign-card .speed,
+.campaign-card.featured .speed {
+    background: rgba(0,180,216,.12) !important;
+    color: var(--primary-color) !important;
+}
+.campaign-card .tariff-features li,
+.campaign-card.featured .tariff-features li {
+    color: var(--dark-gray) !important;
+    border-bottom-color: var(--light-gray) !important;
+}
+.campaign-card .tariff-features li::before,
+.campaign-card.featured .tariff-features li::before { color: var(--accent-cyan) !important; }
+.campaign-card .tariff-button,
+.campaign-card.featured .tariff-button {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%) !important;
+    color: var(--white) !important;
+    box-shadow: none !important;
+}
+.campaign-card .tariff-button:hover,
+.campaign-card.featured .tariff-button:hover {
+    box-shadow: 0 6px 20px rgba(26,35,126,.35) !important;
+    filter: brightness(1.12);
+}
+.campaign-card.featured:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg);
+}
+
+.campaign-desc {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--primary-color) !important;
+    line-height: 1.5;
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.01em;
+    padding: 0.3rem 0.7rem;
+    background: linear-gradient(135deg, rgba(0,180,216,.12) 0%, rgba(26,35,126,.08) 100%) !important;
+    border-left: 3px solid var(--accent-cyan);
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+    text-align: left;
 }
 
 /* Service card (dynamic + about-features) */
@@ -794,12 +879,15 @@ main { margin-top: 0; padding: 0; }
 /* ─── 10. TARIFFS SECTION ────────────────────────────────────────────────── */
 .tariffs {
     background: linear-gradient(180deg, var(--off-white) 0%, var(--light-gray) 100%);
-    padding: 5rem 0 6rem;
+    padding: 2rem 0 3.5rem;
+    box-sizing: border-box;
 }
 .tariffs-content {
     max-width: var(--max-w);
+    width: 100%;
     margin: 0 auto;
     padding: 0 1.5rem;
+    box-sizing: border-box;
     text-align: center;
 }
 .tariffs-subtitle {
@@ -818,7 +906,7 @@ main { margin-top: 0; padding: 0; }
 .tariff-card {
     background: var(--white);
     border-radius: var(--r-lg);
-    padding: 2rem 1.75rem;
+    padding: 2rem 1.75rem 1.75rem;
     box-shadow: var(--shadow-sm);
     border: 1.5px solid var(--mid-gray);
     flex: 1;
@@ -827,7 +915,7 @@ main { margin-top: 0; padding: 0; }
     display: flex;
     flex-direction: column;
     position: relative;
-    overflow: hidden;
+    overflow: clip;
     transition: transform .35s ease, box-shadow .35s ease;
 }
 .tariff-card::before {
@@ -976,6 +1064,7 @@ main { margin-top: 0; padding: 0; }
     padding: .85rem 1.5rem;
     border: none;
     border-radius: 50px;
+    margin-top: auto;
     cursor: pointer;
     font-size: .9rem;
     font-weight: 700;
@@ -1009,12 +1098,15 @@ main { margin-top: 0; padding: 0; }
 /* ─── 11. ABOUT SECTION ──────────────────────────────────────────────────── */
 .about {
     background: var(--white);
-    padding: 5rem 0 6rem;
+    padding: 2rem 0 3.5rem;
+    box-sizing: border-box;
 }
 .about-content {
     max-width: var(--max-w);
+    width: 100%;
     margin: 0 auto;
     padding: 0 1.5rem;
+    box-sizing: border-box;
     text-align: center;
 }
 .about-intro { margin-bottom: 3rem; }
@@ -1122,13 +1214,16 @@ main { margin-top: 0; padding: 0; }
 /* ─── 12. CONTACT SECTION ────────────────────────────────────────────────── */
 .contact-section {
     background: linear-gradient(180deg, var(--off-white) 0%, var(--light-gray) 100%);
-    padding: 5rem 0 6rem;
+    padding: 2rem 0 3.5rem;
+    box-sizing: border-box;
 }
 .contact-wrapper {
     display: grid;
     grid-template-columns: 1fr 1.4fr;
     gap: 2rem;
     max-width: 1100px;
+    width: 100%;
+    box-sizing: border-box;
     margin: 0 auto;
     padding: 0 1.5rem;
     align-items: start;
@@ -1580,7 +1675,7 @@ footer::after {
 /* ─── 17. RESPONSIVE DESIGN ──────────────────────────────────────────────── */
 @media screen and (max-width: 768px) {
     .hamburger { display: flex; }
-    .language-selector { order: -1; margin-left: 8px; margin-right: 12px; }
+    .language-selector { margin-left: auto; margin-right: 8px; }
     .nav-menu {
         position: fixed;
         right: -100%;
@@ -1616,6 +1711,8 @@ footer::after {
     .footer-content { grid-template-columns: 1fr; }
     .stat-number { font-size: 2.2rem; }
     .contact-wrapper { padding: 0 .75rem; }
+    .hero-buttons { flex-direction: column; align-items: center; }
+    .hero-buttons a, .hero-buttons button { width: 100%; max-width: 260px; text-align: center; justify-content: center; }
 }
 
 /* Mobile contact */

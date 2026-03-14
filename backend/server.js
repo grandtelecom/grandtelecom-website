@@ -292,10 +292,10 @@ app.get('/api/content/:section', (req, res) => {
                         alert: null
                     }
                 };
-            } else if (section === 'services') {
+            } else if (section === 'campaigns') {
                 content = {
                     section,
-                    data: { title: 'Xidmətlərimiz', subtitle: 'Sizə təklif etdiyimiz xidmətlər', items: [] }
+                    data: { title: 'Kampaniyalarımız', subtitle: 'Sizə təklif etdiyimiz kampaniyalar', items: [] }
                 };
             } else if (section === 'contact') {
                 content = {
@@ -453,6 +453,29 @@ async function hashPasswordBcrypt(password) {
     return bcrypt.hash(password, saltRounds);
 }
 
+// Startup-da superadmin userStore-da yoxdursa yaradılır
+async function initializeSuperadmin() {
+    const existing = userStore.find(u => u.role === 'superadmin');
+    if (existing.length === 0) {
+        const passwordHash = await hashPasswordBcrypt(SUPERADMIN_PASSWORD);
+        userStore.insertOne({
+            username: SUPERADMIN_USERNAME.toLowerCase(),
+            passwordHash,
+            role: 'superadmin',
+            firstName: 'Super',
+            lastName: 'Admin',
+            email: process.env.SUPERADMIN_EMAIL || 'superadmin@grandtelecom.az',
+            phoneNumber: '',
+            isActive: true,
+            blocked: false,
+            lastLogin: null
+        });
+        console.log(`Superadmin yaradıldı: ${SUPERADMIN_USERNAME}`);
+    } else {
+        console.log(`Superadmin mövcuddur: ${existing[0].username}`);
+    }
+}
+
 async function verifyPassword(user, password) {
     if (!user || !user.passwordHash) return false;
     if (typeof user.passwordHash === 'string' && user.passwordHash.startsWith('$2')) {
@@ -555,16 +578,29 @@ async function authMiddleware(req, res, next) {
         req.user = tokenData;
         const userData = tokenData;
 
-        // Superadmin bypasses user DB check
-        if (userData.userId === 'superadmin-id' || userData.role === 'superadmin') {
-            req.user = {
-                id: 'superadmin-id',
-                username: (userData.username || SUPERADMIN_USERNAME || 'superadmin').toLowerCase(),
+        // Superadmin: userStore-dan real data oxu
+        if (userData.role === 'superadmin') {
+            const userId = userData.userId || userData.id;
+            const superUser = userStore.findById(userId)
+                || userStore.find(u => u.role === 'superadmin')[0];
+            req.user = superUser ? {
+                id: superUser._id,
+                username: superUser.username,
                 role: 'superadmin',
-                firstName: 'Super',
-                lastName: 'Admin',
-                email: 'superadmin@example.com',
-                phoneNumber: '+994 XX XXX XX XX',
+                firstName: superUser.firstName || 'Super',
+                lastName: superUser.lastName || 'Admin',
+                email: superUser.email || '',
+                phoneNumber: superUser.phoneNumber || '',
+                isActive: superUser.isActive
+            } : {
+                // Köhnə sessiya üçün fallback ('superadmin-id')
+                id: userId,
+                username: userData.username,
+                role: 'superadmin',
+                firstName: userData.firstName || 'Super',
+                lastName: userData.lastName || 'Admin',
+                email: userData.email || '',
+                phoneNumber: userData.phoneNumber || '',
                 isActive: true
             };
             return next();
@@ -620,70 +656,13 @@ app.post('/api/login', async (req, res) => {
         console.log('Login attempt for user:', username);
         const normalizedUsername = username.trim().toLowerCase();
 
-        // Super admin login
-        if (SUPERADMIN_ALIASES.has(normalizedUsername)) {
-            const passwordMatch = crypto.timingSafeEqual(
-                Buffer.from(password),
-                Buffer.from(SUPERADMIN_PASSWORD)
-            );
-            if (passwordMatch) {
-                console.log('Superadmin login detected');
-
-                const userData = {
-                    _id: 'superadmin-id',
-                    username: normalizedUsername,
-                    role: 'superadmin',
-                    firstName: 'Super',
-                    lastName: 'Admin',
-                    email: 'superadmin@example.com',
-                    phoneNumber: '+994 XX XXX XX XX',
-                    isActive: true,
-                    lastLogin: new Date().toISOString()
-                };
-
-                const token = generateToken();
-                const tokenExpiry = remember
-                    ? Date.now() + (30 * 24 * 60 * 60 * 1000)
-                    : Date.now() + (24 * 60 * 60 * 1000);
-
-                const sessionPayload = {
-                    userId: 'superadmin-id',
-                    username: userData.username,
-                    role: 'superadmin',
-                    firstName: userData.firstName,
-                    lastName: userData.lastName,
-                    email: userData.email,
-                    isActive: true,
-                    expiresAt: tokenExpiry,
-                    lastLogin: userData.lastLogin
-                };
-                activeTokens.set(token, sessionPayload);
-                try { sessionStore.insertOne({ token, ...sessionPayload }); } catch (e) { console.warn('Session create failed (superadmin):', e?.message || e); }
-
-                console.log('Superadmin uğurla daxil oldu');
-
-                const cookieMaxAge = tokenExpiry - Date.now();
-                res.cookie('auth_token', token, getAuthCookieOptions(cookieMaxAge));
-
-                return res.json({
-                    success: true,
-                    token,
-                    user: userData,
-                    expiresIn: cookieMaxAge
-                });
-            } else {
-                console.log('Yanlış superadmin şifrəsi');
-                return res.status(401).json({
-                    success: false,
-                    error: 'Yanlış istifadəçi adı və ya şifrə',
-                    code: 'INVALID_CREDENTIALS'
-                });
-            }
-        }
-
-        // Normal user login
+        // Unified login: superadmin da artıq userStore-dadır
         try {
-            const user = userStore.findOneCI('username', normalizedUsername);
+            // Superadmin alias ilə daxil olursa (timur, admin, superadmin) birbaşa rol üzrə tap
+            let user = userStore.findOneCI('username', normalizedUsername);
+            if (!user && SUPERADMIN_ALIASES.has(normalizedUsername)) {
+                user = userStore.find(u => u.role === 'superadmin')[0] || null;
+            }
 
             if (!user) {
                 console.log('İstifadəçi tapılmadı:', normalizedUsername);
@@ -1168,9 +1147,16 @@ app.use((err, req, res, next) => {
 
 // Start server
 if (require.main === module) {
-    app.listen(PORT, () => {
-        console.log(`Server is running on http://localhost:${PORT}`);
-    });
+    initializeSuperadmin()
+        .then(() => {
+            app.listen(PORT, () => {
+                console.log(`Server is running on http://localhost:${PORT}`);
+            });
+        })
+        .catch(err => {
+            console.error('Superadmin init xətası:', err);
+            process.exit(1);
+        });
 }
 
 module.exports = app;

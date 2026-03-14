@@ -23,7 +23,7 @@
                         <a href="#home" class="nav-link">Ana Səhifə</a>
                     </li>
                     <li class="nav-item">
-                        <a href="#services" class="nav-link">Xidmətlər</a>
+                        <a href="#campaigns" class="nav-link">Kampaniyalar</a>
                     </li>
                     <li class="nav-item">
                         <a href="#tariffs" class="nav-link">Tariflər</a>
@@ -91,14 +91,14 @@
 
         
 
-        <section id="services" class="services">
-            <div class="services-content">
+        <section id="campaigns" class="campaigns">
+            <div class="campaigns-content">
                 <div class="section-header">
-                    <h2 id="services-title">Xidmətlərimiz</h2>
-                    <p id="services-subtitle">Sizə təklif etdiyimiz xidmətlər</p>
+                    <h2 id="campaigns-title">Kampaniyalarımız</h2>
+                    <p id="campaigns-subtitle">Sizə təklif etdiyimiz kampaniyalar</p>
                 </div>
-                <div class="services-grid" id="services-grid">
-                    <!-- Services will be loaded here dynamically -->
+                <div class="campaigns-grid" id="campaigns-grid">
+                    <!-- Campaigns will be loaded here dynamically -->
                 </div>
             </div>
         </section>
@@ -124,7 +124,6 @@
                             <li>24/7 texniki dəstək</li>
                             <li>Pulsuz quraşdırma</li>
                         </ul>
-                        <button class="tariff-button">Seç</button>
                     </div>
                     <div class="tariff-card featured">
                         <div class="popular-badge">Populyar</div>
@@ -142,7 +141,6 @@
                             <li>24/7 texniki dəstək</li>
                             <li>Pulsuz quraşdırma</li>
                         </ul>
-                        <button class="tariff-button">Seç</button>
                     </div>
                     <div class="tariff-card">
                         <div class="tariff-icon">
@@ -160,7 +158,6 @@
                             <li>24/7 VIP dəstək</li>
                             <li>Pulsuz quraşdırma</li>
                         </ul>
-                        <button class="tariff-button">Seç</button>
                     </div>
                 </div>
             </div>
@@ -402,15 +399,15 @@
         // Hero background click -> scroll to Services
         function initHeroScroll() {
             const hero = document.querySelector('.hero');
-            const services = document.getElementById('services');
-            if (!hero || !services) return;
+            const campaigns = document.getElementById('campaigns');
+            if (!hero || !campaigns) return;
 
             hero.addEventListener('click', function(e) {
                 // Do not intercept clicks on buttons, links, or interactive elements
                 if (e.target.closest('a, button, .cta-button, .language-dropdown, .language-selector')) {
                     return;
                 }
-                services.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                campaigns.scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         }
 
@@ -628,19 +625,19 @@
                     }
                 } catch(_) {}
 
-                // Load services data from backend
-                console.log('Loading services data...');
-                const servicesResponse = await fetchWithPortFallback(`/api/content/services${cacheBuster}`);
+                // Load campaigns data from backend
+                console.log('Loading campaigns data...');
+                const servicesResponse = await fetchWithPortFallback(`/api/content/campaigns${cacheBuster}`);
                 if (servicesResponse.ok) {
                     const servicesData = await servicesResponse.json();
                     if (servicesData) {
-                        const servicesTitle = document.getElementById('services-title');
-                        const servicesSubtitle = document.getElementById('services-subtitle');
-                        
-                        if (servicesTitle) servicesTitle.textContent = servicesData.title || 'Xidmətlərimiz';
-                        if (servicesSubtitle) servicesSubtitle.textContent = servicesData.subtitle || 'Sizə təklif etdiyimiz xidmətlər';
-                        
-                        const servicesGrid = document.getElementById('services-grid');
+                        const servicesTitle = document.getElementById('campaigns-title');
+                        const servicesSubtitle = document.getElementById('campaigns-subtitle');
+
+                        if (servicesTitle) servicesTitle.textContent = servicesData.title || 'Kampaniyalarımız';
+                        if (servicesSubtitle) servicesSubtitle.textContent = servicesData.subtitle || 'Sizə təklif etdiyimiz kampaniyalar';
+
+                        const servicesGrid = document.getElementById('campaigns-grid');
                         if (servicesGrid) {
                             if (servicesData.items && Array.isArray(servicesData.items) && servicesData.items.length > 0) {
                                 const validItems = servicesData.items.filter(s => {
@@ -656,17 +653,18 @@
                                     servicesGrid.innerHTML = validItems.map(service => {
                                         const fa = service.icon && String(service.icon).trim();
                                         const iconHTML = fa ? `<i class="${fa}"></i>` : '';
-                                        const featured = service.popular ? ' featured' : '';
-                                        const featuredIcon = service.popular ? ' featured-icon' : '';
-                                        const badge = service.popular ? '<div class="popular-badge">Populyar</div>' : '';
+                                        const badgeText = service.badge && String(service.badge).trim();
+                                        const featured = badgeText ? ' featured' : '';
+                                        const featuredIcon = badgeText ? ' featured-icon' : '';
+                                        const badge = badgeText ? `<div class="popular-badge campaign-badge">${badgeText}</div>` : '';
                                         const iconSection = iconHTML ? `<div class="tariff-icon${featuredIcon}">${iconHTML}</div>` : '';
                                         const title = (service.title && String(service.title).trim()) ? service.title : '';
                                         const hasDesc = service.description && String(service.description).trim();
-                                        const descSection = hasDesc ? `<div class="tariff-price" style="margin-bottom:0.5rem; font-size:1rem; font-weight:600; color: var(--secondary-color);">${service.description}</div>` : '';
+                                        const descSection = hasDesc ? `<div class="campaign-desc">${service.description}</div>` : '';
                                         const featuresArr = Array.isArray(service.features) ? service.features.filter(f => String(f).trim()) : [];
                                         const featuresSection = featuresArr.length ? `<ul class="tariff-features">${featuresArr.map(f => `<li>${f}</li>`).join('')}</ul>` : '';
                                         return `
-                                        <div class="tariff-card${featured}">
+                                        <div class="tariff-card campaign-card${featured}">
                                         ${badge}
                                         ${iconSection}
                                         ${title ? `<h3>${title}</h3>` : ''}
@@ -677,7 +675,7 @@
                                     }).join('');
                                 }
                             } else {
-                                // Fallback content if no services data
+                                // Fallback content if no campaigns data
                                 servicesGrid.innerHTML = '';
                             }
                         }
@@ -707,7 +705,6 @@
                                     <ul class="tariff-features">
                                         ${tariff.features ? tariff.features.map(feature => `<li>${feature}</li>`).join('') : ''}
                                     </ul>
-                                    <button class="tariff-button">Seç</button>
                                 </div>
                             `;
                             }).join('');
@@ -842,12 +839,88 @@
             }
         }
 
+        // ── Scroll navigation + scrollspy ─────────────────────────────────
+        const SECTIONS = ['home', 'campaigns', 'tariffs', 'about', 'contact'];
+
+        function setActiveNav(id) {
+            document.querySelectorAll('.nav-link[href^="#"]').forEach(function(a) {
+                a.classList.toggle('active', a.getAttribute('href') === '#' + id);
+            });
+        }
+
+        function scrollToSection(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            // Ensure section is visible (in case it was hidden before)
+            el.style.display = '';
+            const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 64;
+            const top  = el.getBoundingClientRect().top + window.scrollY - navH;
+            window.scrollTo({ top: top, behavior: 'smooth' });
+            history.pushState(null, '', '#' + id);
+            setActiveNav(id);
+        }
+
+        function initSectionNav() {
+            // Make all sections visible (reset any previous hide state)
+            SECTIONS.forEach(function(s) {
+                const el = document.getElementById(s);
+                if (el) el.style.display = '';
+            });
+
+            // Nav link clicks → smooth scroll
+            document.querySelectorAll('.nav-link[href^="#"]').forEach(function(a) {
+                a.addEventListener('click', function(e) {
+                    const id = a.getAttribute('href').slice(1);
+                    if (SECTIONS.includes(id)) {
+                        e.preventDefault();
+                        scrollToSection(id);
+                        // Close hamburger menu if open
+                        const menu = document.querySelector('.nav-menu');
+                        if (menu) menu.classList.remove('active');
+                    }
+                });
+            });
+
+            // Scrollspy — IntersectionObserver: active nav = most visible section
+            if ('IntersectionObserver' in window) {
+                const navH = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--nav-h')) || 64;
+                const observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            setActiveNav(entry.target.id);
+                        }
+                    });
+                }, {
+                    rootMargin: '-' + navH + 'px 0px -60% 0px',
+                    threshold: 0
+                });
+                SECTIONS.forEach(function(s) {
+                    const el = document.getElementById(s);
+                    if (el) observer.observe(el);
+                });
+            }
+
+            // Browser back/forward
+            window.addEventListener('popstate', function() {
+                const id = location.hash.slice(1);
+                if (id && SECTIONS.includes(id)) scrollToSection(id);
+            });
+
+            // On load: scroll to hash if present
+            const initId = location.hash.slice(1);
+            if (initId && SECTIONS.includes(initId)) {
+                setTimeout(function() { scrollToSection(initId); }, 100);
+            } else {
+                setActiveNav('home');
+            }
+        }
+
         // Load content when the page loads
         document.addEventListener('DOMContentLoaded', function() {
             loadContent();
             initContactForm();
             initLanguageSelector();
-            initHeroScroll();
+            initSectionNav();
         });
     </script>
     

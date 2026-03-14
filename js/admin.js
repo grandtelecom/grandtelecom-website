@@ -221,12 +221,12 @@
     // Manual role permissions (overridable via localStorage.GT_PERMISSIONS)
     const DEFAULT_PERMISSIONS = {
         superadmin: {
-            tabs: ['dashboard','about','services','tariffs','posts','contact','users','profile'],
+            tabs: ['dashboard','about','campaigns','tariffs','posts','contact','users','profile'],
             actions: { users: { changePassword: true, block: true, delete: true } }
         },
         admin: {
             // Admin bütün bölmələrə girə bilər
-            tabs: ['dashboard','about','services','tariffs','posts','contact','users','profile'],
+            tabs: ['dashboard','about','campaigns','tariffs','posts','contact','users','profile'],
             actions: { users: { changePassword: true, block: true, delete: false } }
         },
         pr: {

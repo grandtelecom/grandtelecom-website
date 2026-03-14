@@ -11,7 +11,13 @@
       "Bash(netstat:*)",
       "Bash(taskkill:*)",
       "Bash(grep -r \"localStorage\\\\|sessionStorage\" js/*.js)",
-      "Bash(node -e \"require\\(''''./server.js''''\\)\")"
+      "Bash(node -e \"require\\(''''./server.js''''\\)\")",
+      "Bash(node -c /d/Grand/HTML/backend/server.js)",
+      "Bash(timeout 8 node server.js)",
+      "Bash(node -c /d/Grand/HTML/backend/update-superadmin.js)",
+      "Bash(echo \"AGRSuperadmin:*)",
+      "Bash(node update-superadmin.js)",
+      "Bash(grep -rn \"campaigns-grid\\\\|campaign-card\\\\|campaigns_grid\" /d/Grand/HTML/ --include=*.js --include=*.html)"
     ]
   }
 }
