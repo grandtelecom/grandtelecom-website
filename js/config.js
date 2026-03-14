@@ -8,20 +8,8 @@
   const PORT = window.location.port;
   const IS_LOCAL = ['localhost', '127.0.0.1', '0.0.0.0', '::1'].includes(HOST) || ['5500','5501','8080'].includes(PORT);
 
-  // BASE_URL üçün override mexanizmi (ən yüksək prioritetdən aşağıya)
-  const OVERRIDE_BASE = (function() {
-    try {
-      if (typeof window !== 'undefined') {
-        if (window.FORCE_API_BASE_URL && typeof window.FORCE_API_BASE_URL === 'string') {
-          return window.FORCE_API_BASE_URL;
-        }
-        const ls = window.localStorage ? window.localStorage.getItem('API_BASE_URL_OVERRIDE') : null;
-        if (ls) return ls;
-        if (window.CONFIG && window.CONFIG.API_BASE_URL) return window.CONFIG.API_BASE_URL;
-      }
-    } catch (_) { /* ignore */ }
-    return null;
-  })();
+  // API base URL — determined by environment only; no runtime override allowed
+  const OVERRIDE_BASE = null;
   // Əsas konfiqurasiya obyekti
   const CONFIG = {
     // Ümumi icazə verilən bölmələr (frontend doğrulama üçün)
@@ -43,22 +31,21 @@
     API: {
       BASE_URL: OVERRIDE_BASE || (IS_LOCAL
         ? 'http://localhost:3001/api'
-        : 'https://api.grandtelecom.az'),
+        : '/api'),
       TIMEOUT_MS: 10000, // 10 saniyə
       VERSION: 'v1',
 
-      // Təhlükəsizlik başlıqları
+      // Standart başlıqlar (X-API-Key silindi — frontend-də yaranırdı, backend-də yoxlanmırdı)
       HEADERS: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest',
-        'X-API-Key': 'gt_' + btoa('grand_telecom_' + window.location.hostname)
+        'X-Requested-With': 'XMLHttpRequest'
       },
 
-      // CSRF token üçün konfiqurasiya
+      // CSRF token konfiqurasiyası (double-submit cookie, admin.js patchFetch tərəfindən idarə olunur)
       CSRF: {
-        COOKIE_NAME: 'XSRF-TOKEN',
-        HEADER_NAME: 'X-XSRF-TOKEN',
+        COOKIE_NAME: 'csrf_token',
+        HEADER_NAME: 'X-CSRF-Token',
         TOKEN: null
       },
 
@@ -306,6 +293,16 @@
       ]
     }
   };
+
+  // Mərkəzləşdirilmiş localStorage açarları — bütün JS faylları bu sabitləri istifadə etməlidir
+  // Auth məlumatları (token, istifadəçi) artıq localStorage-da saxlanmır — httpOnly cookie istifadə olunur
+  const LS_KEYS = {
+    LAST_TAB:            'lastTab',          // Son açıq admin tab
+    PERMISSIONS_OVERRIDE: 'GT_PERMISSIONS',  // Developer rol override (dev mühiti)
+    LANGUAGE:            'i18n_lang'         // Seçilmiş dil
+  };
+  CONFIG.LS_KEYS = LS_KEYS;
+  window.LS_KEYS = LS_KEYS;
 
   // Global dəyişənlərə əlavə et
   window.APP_CONFIG = CONFIG;

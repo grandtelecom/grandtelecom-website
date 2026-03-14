@@ -52,6 +52,12 @@ if (window.adminContentInitialized) {
     });
   }
 
+  // Validate icon class against ICON_LIST whitelist to prevent stored XSS
+  function sanitizeIconClass(cls) {
+    const allowed = ICON_LIST.map(i => i.cls);
+    return allowed.includes(cls) ? cls : '';
+  }
+
   function createIconPicker(inputCls, currentValue) {
     const wrapper = document.createElement('div');
     wrapper.style.cssText = 'position:relative;width:100%;';
@@ -59,7 +65,7 @@ if (window.adminContentInitialized) {
     const hidden = document.createElement('input');
     hidden.type  = 'hidden';
     hidden.className = inputCls;
-    hidden.value = currentValue || '';
+    hidden.value = sanitizeIconClass(currentValue || '');
 
     const btn = document.createElement('button');
     btn.type = 'button';
@@ -134,11 +140,7 @@ if (window.adminContentInitialized) {
     return wrapper;
   }
 
-  function getToken() {
-    try {
-      return localStorage.getItem('auth_token') || localStorage.getItem('authToken') || '';
-    } catch(_) { return ''; }
-  }
+  // Auth is handled via httpOnly cookie (credentials: 'include' set globally in admin.js)
 
   // ----- TARIFFS -----
   function renderFeatureItem(listEl, text) {
@@ -353,11 +355,6 @@ if (window.adminContentInitialized) {
     if (subEl && !subEl.value) subEl.value = 'Sizə uyğun tarifdən seçin';
   }
 
-  function authHeaders() {
-    const t = getToken();
-    return t ? { Authorization: 'Bearer ' + t } : {};
-  }
-
   // ----- HOMEPAGE -----
   // Removed Quill; use simple textarea `#hero-description` instead.
 
@@ -506,7 +503,7 @@ if (window.adminContentInitialized) {
           // upload to backend
           const form = new FormData();
           form.append('image', file);
-          const res = await fetch(api.getBaseUrl() + (CONFIG.API?.ENDPOINTS?.UPLOAD?.IMAGE || '/upload/image'), { method: 'POST', body: form, headers: { ...authHeaders() } });
+          const res = await fetch(api.getBaseUrl() + (CONFIG.API?.ENDPOINTS?.UPLOAD?.IMAGE || '/upload/image'), { method: 'POST', body: form });
           const j = await res.json();
           if (res.ok && j.url) {
             if (urlEl) urlEl.value = j.url;

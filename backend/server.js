@@ -14,6 +14,19 @@ const bcrypt = require('bcryptjs');
 const DATA_DIR = path.join(__dirname, 'data');
 fs.ensureDirSync(DATA_DIR);
 
+// #13: Təhlükəsizlik hadisəsi loqu — data/security.log faylına əlavə edir
+const SECURITY_LOG_FILE = path.join(DATA_DIR, 'security.log');
+function securityLog(event, details = {}) {
+    try {
+        const line = JSON.stringify({
+            ts: new Date().toISOString(),
+            event,
+            ...details
+        }) + '\n';
+        fs.appendFileSync(SECURITY_LOG_FILE, line, 'utf8');
+    } catch (e) { /* log yazıla bilməsə də server dayanmamalıdır */ }
+}
+
 class JsonStore {
     constructor(filePath, opts = {}) {
         this.filePath = filePath;
@@ -26,8 +39,28 @@ class JsonStore {
         try {
             if (fs.existsSync(this.filePath)) {
                 const raw = fs.readFileSync(this.filePath, 'utf8');
-                this._data = JSON.parse(raw);
-                if (!Array.isArray(this._data)) this._data = [];
+                try {
+                    this._data = JSON.parse(raw);
+                    if (!Array.isArray(this._data)) this._data = [];
+                } catch (parseErr) {
+                    // Ana fayl zədəlidir — .tmp ehtiyat nüsxəsindən bərpa cəhdi
+                    console.warn(`JsonStore: ${this.filePath} zədəlidir, .tmp yedəkdən bərpa cəhdi...`);
+                    const tmp = this.filePath + '.tmp';
+                    if (fs.existsSync(tmp)) {
+                        try {
+                            this._data = JSON.parse(fs.readFileSync(tmp, 'utf8'));
+                            if (!Array.isArray(this._data)) this._data = [];
+                            this._save(); // Bərpa olunan məlumatı ana fayla yaz
+                            console.log(`JsonStore: ${path.basename(this.filePath)} .tmp yedəkdən bərpa edildi`);
+                        } catch (_) {
+                            console.error(`JsonStore: ${this.filePath} .tmp yedəyi də oxunmadı, boş başlanır`);
+                            this._data = [];
+                        }
+                    } else {
+                        console.error(`JsonStore: ${this.filePath} üçün .tmp yedək yoxdur, boş başlanır`);
+                        this._data = [];
+                    }
+                }
             } else {
                 this._data = [];
                 this._save();
@@ -39,9 +72,14 @@ class JsonStore {
     }
 
     _save() {
-        const tmp = this.filePath + '.tmp';
-        fs.writeFileSync(tmp, JSON.stringify(this._data, null, 2), 'utf8');
-        fs.renameSync(tmp, this.filePath);
+        try {
+            const tmp = this.filePath + '.tmp';
+            fs.writeFileSync(tmp, JSON.stringify(this._data, null, 2), 'utf8');
+            fs.renameSync(tmp, this.filePath);
+        } catch (e) {
+            console.error(`JsonStore: ${this.filePath} yazılarkən xəta:`, e.message);
+            throw e; // Çağıran kod xəbərdar olsun
+        }
     }
 
     _genId() {
@@ -197,6 +235,33 @@ function getTokenFromRequest(req) {
     return null;
 }
 
+// #10: CSRF token — double-submit cookie pattern
+function generateCsrfToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+function getCsrfCookieOptions() {
+    return {
+        httpOnly: false,                         // JS oxumalıdır (patchFetch üçün)
+        secure: isProd,
+        sameSite: isProd ? 'strict' : 'lax',
+        maxAge: 24 * 60 * 60 * 1000,           // 1 gün
+        path: '/'
+    };
+}
+
+// CSRF middleware: POST/PUT/PATCH/DELETE sorğularında header == cookie yoxlanır
+function csrfMiddleware(req, res, next) {
+    const safeMethod = /^(GET|HEAD|OPTIONS)$/i.test(req.method);
+    if (safeMethod) return next();
+    const cookieVal = req.cookies && req.cookies.csrf_token;
+    const headerVal = req.headers['x-csrf-token'];
+    if (!cookieVal || !headerVal || cookieVal !== headerVal) {
+        return res.status(403).json({ error: 'CSRF yoxlaması uğursuz oldu', code: 'CSRF_INVALID' });
+    }
+    next();
+}
+
 // Create Express app
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -232,7 +297,7 @@ const corsOptions = {
     return callback(new Error('CORS not allowed for this origin'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Pragma', 'Expires', 'Accept', 'Accept-Language'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Cache-Control', 'Pragma', 'Expires', 'Accept', 'Accept-Language', 'X-CSRF-Token'],
   credentials: true,
   optionsSuccessStatus: 204
 };
@@ -241,7 +306,8 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
-app.use('/uploads', express.static('uploads'));
+// #8: /uploads requires authentication — prevent unauthenticated file access
+app.use('/uploads', authMiddleware, express.static(path.join(__dirname, 'uploads')));
 
 // Rate limiting
 const globalLimiter = rateLimit({
@@ -263,16 +329,50 @@ const authLimiter = rateLimit({
 app.use(globalLimiter);
 app.use('/api/login', authLimiter);
 
+// #10: CSRF middleware — login/logout/refresh/verify exempt; all other mutating routes protected
+app.use((req, res, next) => {
+    const exempt = ['/api/login', '/api/auth/refresh', '/api/logout', '/api/auth/logout', '/api/auth/verify', '/api/auth/me'];
+    if (exempt.includes(req.path)) return next();
+    return csrfMiddleware(req, res, next);
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 
 // ---------- Content Endpoints ----------
+
+// #9: Whitelist of allowed section names
+const ALLOWED_CONTENT_SECTIONS = ['homepage', 'campaigns', 'tariffs', 'about', 'contact'];
+
+// #6: Per-section top-level key whitelist for payload validation
+const SECTION_SCHEMA = {
+    homepage:  new Set(['hero', 'alert']),
+    campaigns: new Set(['title', 'subtitle', 'items']),
+    tariffs:   new Set(['title', 'subtitle', 'plans']),
+    about:     new Set(['title', 'content', 'mission', 'vision', 'values', 'values_text']),
+    contact:   new Set(['address', 'phone', 'phones', 'email', 'hours']),
+};
+
+function validateContentPayload(section, payload) {
+    const allowed = SECTION_SCHEMA[section];
+    if (!allowed) return null; // unknown section already blocked by whitelist
+    const unknown = Object.keys(payload).filter(k => !allowed.has(k));
+    if (unknown.length > 0) return `İcazəsiz sahələr: ${unknown.join(', ')}`;
+    const raw = JSON.stringify(payload);
+    if (raw.length > 100 * 1024) return 'Payload həcmi 100KB limitini keçir';
+    return null;
+}
+
 app.get('/api/content/:section', (req, res) => {
     try {
         const section = (req.params.section || '').trim().toLowerCase();
         if (!section) return res.status(400).json({ error: 'Bölmə adı tələb olunur' });
+        // #9: reject unknown sections
+        if (!ALLOWED_CONTENT_SECTIONS.includes(section)) {
+            return res.status(400).json({ error: 'Naməlum bölmə adı' });
+        }
 
         let content = contentStore.findOne({ section });
 
@@ -331,6 +431,13 @@ app.put('/api/content/:section', authMiddleware, adminOrSuper, (req, res) => {
         const section = (req.params.section || '').trim().toLowerCase();
         const payload = req.body || {};
         if (!section) return res.status(400).json({ error: 'Bölmə adı tələb olunur' });
+        // #9: section whitelist
+        if (!ALLOWED_CONTENT_SECTIONS.includes(section)) {
+            return res.status(400).json({ error: 'Naməlum bölmə adı' });
+        }
+        // #6: schema validation
+        const schemaErr = validateContentPayload(section, payload);
+        if (schemaErr) return res.status(422).json({ error: schemaErr });
 
         const updated = contentStore.upsert({ section }, payload);
         return res.json({ message: 'Məzmun yeniləndi', section, data: updated.data || {} });
@@ -346,6 +453,13 @@ app.post('/api/content/:section', authMiddleware, adminOrSuper, (req, res) => {
         const section = (req.params.section || '').trim().toLowerCase();
         const payload = req.body || {};
         if (!section) return res.status(400).json({ error: 'Bölmə adı tələb olunur' });
+        // #9: section whitelist
+        if (!ALLOWED_CONTENT_SECTIONS.includes(section)) {
+            return res.status(400).json({ error: 'Naməlum bölmə adı' });
+        }
+        // #6: schema validation
+        const schemaErr = validateContentPayload(section, payload);
+        if (schemaErr) return res.status(422).json({ error: schemaErr });
 
         const updated = contentStore.upsert({ section }, payload);
         return res.json({ message: 'Məzmun yeniləndi', section, data: updated.data || {} });
@@ -502,6 +616,60 @@ function safeUser(doc) {
 
 const activeTokens = new Map();
 
+// #12: Sessiya say limiti — hər istifadəçi üçün max 5 aktiv sessiya
+const MAX_SESSIONS_PER_USER = 5;
+function pruneUserSessions(userId) {
+    try {
+        const userSessions = sessionStore.find(s => s.userId === userId)
+            .sort((a, b) => (a.expiresAt || 0) - (b.expiresAt || 0)); // köhnədən yeniyə
+        if (userSessions.length >= MAX_SESSIONS_PER_USER) {
+            const toRemove = userSessions.slice(0, userSessions.length - MAX_SESSIONS_PER_USER + 1);
+            toRemove.forEach(s => {
+                activeTokens.delete(s.token);
+                try { sessionStore.deleteOne({ token: s.token }); } catch(_) {}
+            });
+        }
+    } catch (e) { console.warn('pruneUserSessions xəta:', e?.message); }
+}
+
+// ── Startup: sessionStore-dan aktiv sessionları bərpa et ──────────────────────
+(function restoreActiveSessions() {
+    try {
+        const now = Date.now();
+        const sessions = sessionStore.find({}).filter(s => s.expiresAt > now);
+        sessions.forEach(s => {
+            activeTokens.set(s.token, {
+                userId: s.userId, username: s.username, role: s.role,
+                firstName: s.firstName, lastName: s.lastName, email: s.email,
+                phoneNumber: s.phoneNumber, isActive: s.isActive,
+                expiresAt: s.expiresAt, lastLogin: s.lastLogin
+            });
+        });
+        if (sessions.length) console.log(`Restored ${sessions.length} active session(s) from store`);
+    } catch (e) { console.warn('Session restore failed:', e?.message); }
+})();
+
+// #12: Sessiya təmizlənməsi — startup-da dərhal + hər 15 dəqiqə
+function cleanExpiredSessions() {
+    const now = Date.now();
+    let cleaned = 0;
+    for (const [token, data] of activeTokens) {
+        if (data.expiresAt < now) { activeTokens.delete(token); cleaned++; }
+    }
+    try {
+        sessionStore.find({}).filter(s => s.expiresAt <= now).forEach(s => {
+            try { sessionStore.deleteOne({ token: s.token }); } catch(_) {}
+            cleaned++;
+        });
+    } catch(_) {}
+    if (cleaned > 0) console.log(`Session cleanup: ${cleaned} expired session(s) removed`);
+}
+cleanExpiredSessions(); // startup-da dərhal
+setInterval(cleanExpiredSessions, 15 * 60 * 1000);
+
+// ── Session yazma kilidi — eyni tokeni paralel yazmaqdan qoruyur ───────────────
+const _sessionWriteLocks = new Set();
+
 // Auth middleware
 async function authMiddleware(req, res, next) {
     try {
@@ -570,10 +738,17 @@ async function authMiddleware(req, res, next) {
             });
         }
 
-        // Sliding expiration
-        tokenData.expiresAt = currentTime + (24 * 60 * 60 * 1000);
+        // Sliding expiration — yazma kilidi ilə paralel yazmanın qarşısını al
+        const newExpiry = currentTime + (24 * 60 * 60 * 1000);
+        tokenData.expiresAt = newExpiry;
         activeTokens.set(token, tokenData);
-        try { sessionStore.updateOne({ token }, { expiresAt: tokenData.expiresAt }); } catch(_) {}
+        if (!_sessionWriteLocks.has(token)) {
+            _sessionWriteLocks.add(token);
+            setImmediate(() => {
+                try { sessionStore.updateOne({ token }, { expiresAt: newExpiry }); } catch(_) {}
+                _sessionWriteLocks.delete(token);
+            });
+        }
 
         req.user = tokenData;
         const userData = tokenData;
@@ -666,6 +841,7 @@ app.post('/api/login', async (req, res) => {
 
             if (!user) {
                 console.log('İstifadəçi tapılmadı:', normalizedUsername);
+                securityLog('LOGIN_FAIL', { username: normalizedUsername, reason: 'user_not_found', ip: req.ip });
                 return res.status(401).json({
                     success: false,
                     error: 'Yanlış istifadəçi adı və ya şifrə',
@@ -685,11 +861,23 @@ app.post('/api/login', async (req, res) => {
             const isPasswordValid = await verifyPassword(user, password);
             if (!isPasswordValid) {
                 console.log('Yanlış şifrə cəhdi:', normalizedUsername);
+                securityLog('LOGIN_FAIL', { username: normalizedUsername, reason: 'wrong_password', ip: req.ip });
                 return res.status(401).json({
                     success: false,
                     error: 'Yanlış istifadəçi adı və ya şifrə',
                     code: 'INVALID_CREDENTIALS'
                 });
+            }
+
+            // PBKDF2 → bcrypt avtomatik miqrasiya (giriş zamanı şəffaf şəkildə)
+            if (isPasswordValid && !String(user.passwordHash || '').startsWith('$2')) {
+                hashPasswordBcrypt(password)
+                    .then(newHash => {
+                        userStore.updateById(user._id, { passwordHash: newHash, salt: null });
+                        securityLog('PBKDF2_MIGRATED', { username: user.username });
+                        console.log(`[PBKDF2] ${user.username} bcrypt-ə miqrasiya edildi`);
+                    })
+                    .catch(e => console.warn('PBKDF2→bcrypt miqrasiya uğursuz:', e?.message));
             }
 
             // Update last login
@@ -713,13 +901,18 @@ app.post('/api/login', async (req, res) => {
                 expiresAt: tokenExpiry,
                 lastLogin: lastLogin.toISOString()
             };
+            // #12: Köhnə sessiyaları sil (per-user limit)
+            pruneUserSessions(user._id);
             activeTokens.set(token, sessionPayload);
             try { sessionStore.insertOne({ token, ...sessionPayload }); } catch (e) { console.warn('Session create failed:', e?.message || e); }
 
             console.log('Uğurlu giriş:', normalizedUsername);
+            securityLog('LOGIN_OK', { username: normalizedUsername, role: user.role, ip: req.ip });
 
             const cookieMaxAge = tokenExpiry - Date.now();
             res.cookie('auth_token', token, getAuthCookieOptions(cookieMaxAge));
+            // #10: Set CSRF token cookie (non-httpOnly so JS can read it)
+            res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions());
 
             return res.json({
                 success: true,
@@ -790,6 +983,8 @@ async function handleLogout(req, res) {
             try { sessionStore.deleteOne({ token }); } catch(_) {}
         }
         res.clearCookie('auth_token', { httpOnly: true, secure: isProd, sameSite: isProd ? 'strict' : 'lax', path: '/' });
+        res.clearCookie('csrf_token', { path: '/' });
+        securityLog('LOGOUT', { username: req.user?.username, ip: req.ip });
         res.json({ message: 'Uğurla çıxış edildi' });
     } catch (error) {
         console.error('Logout error:', error);
@@ -884,6 +1079,7 @@ app.post('/api/auth/refresh', authMiddleware, (req, res) => {
 
         const newCookieMaxAge = tokenExpiry - Date.now();
         res.cookie('auth_token', newToken, getAuthCookieOptions(newCookieMaxAge));
+        res.cookie('csrf_token', generateCsrfToken(), getCsrfCookieOptions());
 
         return res.json({
             success: true,
@@ -933,6 +1129,7 @@ app.post('/api/users', authMiddleware, superAdminOnly, async (req, res) => {
         });
 
         console.log('User saved successfully');
+        securityLog('USER_CREATE', { username, role, by: req.user?.username, ip: req.ip });
 
         res.status(201).json({
             message: 'İstifadəçi uğurla yaradıldı',
@@ -990,6 +1187,11 @@ app.patch('/api/users/:username', authMiddleware, superAdminOnly, (req, res) => 
             });
         }
 
+        // #11: Superadmin öz rolunu dəyişdirə bilməz
+        if (role !== undefined && req.user.username.toLowerCase() === username.toLowerCase()) {
+            return res.status(403).json({ error: 'Öz rolunuzu dəyişdirə bilməzsiniz' });
+        }
+
         const updateFields = {};
         if (blocked !== undefined) updateFields.blocked = blocked;
         if (role !== undefined) updateFields.role = role;
@@ -998,6 +1200,8 @@ app.patch('/api/users/:username', authMiddleware, superAdminOnly, (req, res) => 
         if (!updated) {
             return res.status(404).json({ error: 'İstifadəçi tapılmadı' });
         }
+        if (role !== undefined) securityLog('ROLE_CHANGE', { target: username, newRole: role, by: req.user?.username, ip: req.ip });
+        if (blocked !== undefined) securityLog('BLOCK_CHANGE', { target: username, blocked, by: req.user?.username, ip: req.ip });
 
         res.json(safeUser(updated));
     } catch (error) {
@@ -1030,6 +1234,7 @@ app.patch('/api/users/:username/password', authMiddleware, superAdminOnly, async
         const passwordHash = await hashPasswordBcrypt(newPassword);
 
         userStore.updateById(user._id, { passwordHash, salt: null });
+        securityLog('PASSWORD_CHANGE', { target: username, by: req.user?.username, ip: req.ip });
 
         res.json({ message: 'Şifrə uğurla dəyişdirildi' });
     } catch (error) {
@@ -1053,6 +1258,7 @@ app.delete('/api/users/:username', authMiddleware, superAdminOnly, (req, res) =>
         if (result.deletedCount === 0) {
             return res.status(404).json({ error: 'İstifadəçi tapılmadı' });
         }
+        securityLog('USER_DELETE', { target: username, by: req.user?.username, ip: req.ip });
 
         res.json({ message: 'İstifadəçi uğurla silindi' });
     } catch (error) {
@@ -1087,6 +1293,22 @@ function initializeContent() {
 
 // Initialize content at startup
 initializeContent();
+
+// #PBKDF2 audit: startup-da PBKDF2 hash-li istifadəçiləri hesabat et
+(function auditPbkdf2Users() {
+    try {
+        const all = userStore.find({});
+        const legacy = all.filter(u => u.passwordHash && !String(u.passwordHash).startsWith('$2'));
+        if (legacy.length > 0) {
+            console.warn(`[PBKDF2 AUDIT] ${legacy.length} istifadəçi köhnə PBKDF2 hash istifadə edir:`,
+                legacy.map(u => u.username).join(', '));
+            console.warn('[PBKDF2 AUDIT] Bu istifadəçilər növbəti girişdə avtomatik bcrypt-ə keçəcək.');
+            securityLog('PBKDF2_AUDIT', { count: legacy.length, users: legacy.map(u => u.username) });
+        } else {
+            console.log('[PBKDF2 AUDIT] Bütün istifadəçilər bcrypt hash istifadə edir.');
+        }
+    } catch (e) { console.warn('PBKDF2 audit xəta:', e?.message); }
+})();
 
 // File upload endpoints
 app.post('/api/upload', authMiddleware, upload.single('image'), (req, res) => {

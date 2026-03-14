@@ -4,6 +4,37 @@
     if (window.adminInitialized) return;
     window.adminInitialized = true;
 
+    // ── Auth: httpOnly cookie istifadə edir, localStorage token yoxdur ───────
+    // Bütün fetch çağırışları avtomatik credentials: 'include' gönderir
+    let _currentUser = null;
+    (function patchFetch() {
+        function getCsrfToken() {
+            try {
+                const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+                return match ? decodeURIComponent(match[1]) : '';
+            } catch (_) { return ''; }
+        }
+        const _orig = window.fetch.bind(window);
+        window.fetch = function(url, opts) {
+            opts = opts || {};
+            opts.credentials = 'include';
+            // #10: add CSRF token header on state-mutating requests
+            const method = (opts.method || 'GET').toUpperCase();
+            if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+                const csrf = getCsrfToken();
+                if (csrf) {
+                    opts.headers = opts.headers || {};
+                    if (opts.headers instanceof Headers) {
+                        opts.headers.set('X-CSRF-Token', csrf);
+                    } else {
+                        opts.headers['X-CSRF-Token'] = csrf;
+                    }
+                }
+            }
+            return _orig(url, opts);
+        };
+    })();
+
     // Elegant toast notifications (override window.alert)
     (function initNotifier() {
         if (window.__notifierInitialized__) return;
@@ -65,13 +96,9 @@
                 btn.disabled = true;
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Yaradılır...';
 
-                const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token') || '';
                 const resp = await fetch(`${API_BASE_URL}/api/users`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         username,
                         password,
@@ -128,15 +155,16 @@
         const dropdown = document.getElementById('profileDropdown');
         if (!btn || !dropdown) return;
 
-        // Populate profile info from storage
+        // Populate profile info from _currentUser (httpOnly cookie auth — no localStorage)
         try {
-            const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+            const user = _currentUser || {};
+            const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || '';
             const nameEl = document.getElementById('profile-name');
             const roleEl = document.getElementById('profile-role');
             const userEl = document.getElementById('profile-username');
             const avatarEl = document.getElementById('profile-avatar');
-            const initials = (user.fullName || user.username || 'GT').toString().trim().split(/\s+/).map(s=>s[0]).join('').slice(0,2).toUpperCase();
-            if (nameEl) nameEl.textContent = user.fullName || user.username || 'İstifadəçi';
+            const initials = (fullName || user.username || 'GT').trim().split(/\s+/).map(s=>s[0]).join('').slice(0,2).toUpperCase();
+            if (nameEl) nameEl.textContent = fullName || user.username || 'İstifadəçi';
             if (roleEl) roleEl.textContent = (user.role ? user.role.toUpperCase() : 'USER');
             if (userEl) userEl.textContent = user.username ? ('@' + user.username) : '@user';
             if (avatarEl) avatarEl.textContent = initials;
@@ -162,11 +190,8 @@
             logoutBtn.addEventListener('click', async () => {
                 try {
                     // Backend-ə logout sorğusu göndər — httpOnly cookie-ni server silir
-                    const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token') || '';
                     await fetch(`${API_BASE_URL}/api/auth/logout`, {
-                        method: 'POST',
-                        credentials: 'include', // cookie göndərilsin
-                        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                        method: 'POST'
                     }).catch(() => {});
                 } catch(_) {}
                 // localStorage-ı da təmizlə (köhnə data)
@@ -251,15 +276,14 @@
 
     function getPermissions() {
         try {
-            const raw = localStorage.getItem('GT_PERMISSIONS');
+            const raw = localStorage.getItem(window.LS_KEYS?.PERMISSIONS_OVERRIDE || 'GT_PERMISSIONS');
             if (!raw) return DEFAULT_PERMISSIONS;
             const parsed = JSON.parse(raw);
             return parsed && typeof parsed === 'object' ? parsed : DEFAULT_PERMISSIONS;
         } catch(_) { return DEFAULT_PERMISSIONS; }
     }
     function getRole() {
-        const cu = JSON.parse(localStorage.getItem('currentUser') || '{}');
-        return (localStorage.getItem('auth_role') || cu.role || 'user').toLowerCase();
+        return (_currentUser?.role || 'user').toLowerCase();
     }
     function canAccessTab(tabId) {
         const role = getRole();
@@ -273,8 +297,7 @@
         const sect = (perms[role]?.actions || {})[section] || {};
         // Own-account exception for password change
         if (section === 'users' && action === 'changePassword' && username) {
-            const cu = JSON.parse(localStorage.getItem('currentUser') || '{}');
-            if (cu.username && cu.username === username) return true;
+            if (_currentUser?.username && _currentUser.username === username) return true;
         }
         return !!sect[action];
     }
@@ -341,7 +364,7 @@
                         if (location.hash !== '#' + tabId) {
                             location.hash = tabId;
                         }
-                        try { sessionStorage.setItem('lastTab', tabId); localStorage.setItem('lastTab', tabId); } catch(_) {}
+                        try { const k = window.LS_KEYS?.LAST_TAB || 'lastTab'; sessionStorage.setItem(k, tabId); localStorage.setItem(k, tabId); } catch(_) {}
                     }
                 } catch(_) {}
                 switchTab(tabId);
@@ -388,22 +411,16 @@
                 if (location.hash !== '#' + tabId) {
                     location.hash = tabId;
                 }
-                try { sessionStorage.setItem('lastTab', tabId); localStorage.setItem('lastTab', tabId); } catch(_) {}
+                try { const k = window.LS_KEYS?.LAST_TAB || 'lastTab'; sessionStorage.setItem(k, tabId); localStorage.setItem(k, tabId); } catch(_) {}
             }
         } catch(_) {}
         
         // Load tab specific content
         if (tabId === 'users') {
-            const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
-            const role = localStorage.getItem('auth_role');
-            if (!token) {
-                console.warn('İcazə yoxdur: daxil olmadan İstifadəçilər siyahısı göstərilə bilməz.');
-                // Optional: show a gentle notice in the UI if container exists
+            if (!_currentUser) {
                 const tbody = document.querySelector('#users-table tbody');
-                if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="color:#c00;">Giriş tələb olunur. Zəhmət olmasa əvvəlcə sistemə daxil olun.</td></tr>';
-                }
-            } else if (role && !['superadmin','admin'].includes(role.toLowerCase())) {
+                if (tbody) tbody.innerHTML = '<tr><td colspan="8" style="color:#c00;">Giriş tələb olunur.</td></tr>';
+            } else if (!['superadmin','admin'].includes((_currentUser.role || '').toLowerCase())) {
                 console.warn('Bu bölməyə yalnız admin və ya superadmin çıxışı var.');
                 const tbody = document.querySelector('#users-table tbody');
                 if (tbody) {
@@ -415,48 +432,27 @@
         }
     }
 
-    // Check authentication
+    // Check authentication — httpOnly cookie ilə, localStorage token yoxdur
     async function checkAuth() {
-        const currentPath = window.location.pathname;
-        const isLoginPage = currentPath.endsWith('login.html');
-        
-        // Check if we have a token in storage
-        const token = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
-        
-        // If no token and not on login page, redirect to login
-        if (!token) {
-            if (!isLoginPage) {
-                console.warn('Auth token tapılmadı. Login səhifəsinə yönləndirilir...');
-                // Clear any existing user data
-                localStorage.removeItem('currentUser');
-                sessionStorage.clear();
-                window.location.href = 'login.html';
-            }
-            return false;
-        }
-        
-        // If we're on the login page but have a token, redirect to admin panel
-        if (isLoginPage) {
-            console.log('Artıq daxil olunub. Admin panelinə yönləndirilir...');
-            window.location.href = 'admin-panel.html';
-            return true;
-        }
-        
-        // Verify the token with the server
+        const isLoginPage = window.location.pathname.endsWith('login.html');
+
         try {
-            // Use ApiClient to verify the token
             const userData = await window.apiClient.get('auth/me');
-            
+
             if (userData && userData.username) {
-                // Store user data in localStorage and persist role for later checks
-                localStorage.setItem('currentUser', JSON.stringify(userData));
-                try { localStorage.setItem('auth_role', (userData.role || '').toLowerCase()); } catch(_) {}
+                _currentUser = userData; // yalnız yaddaşda saxla
+
+                if (isLoginPage) {
+                    window.location.href = 'admin-panel.html';
+                    return true;
+                }
                 
                 // Check role-based access
                 const urlParams = new URLSearchParams(window.location.search);
                 const tabParam = urlParams.get('tab');
                 const hashTab = (location.hash || '').replace('#','');
-                const storedTab = sessionStorage.getItem('lastTab') || localStorage.getItem('lastTab');
+                const _ltKey = window.LS_KEYS?.LAST_TAB || 'lastTab';
+                const storedTab = sessionStorage.getItem(_ltKey) || localStorage.getItem(_ltKey);
                 const desiredTab = tabParam || hashTab || storedTab || 'dashboard';
 
                 // If trying to access users tab but not an admin
@@ -489,21 +485,15 @@
             
         } catch (error) {
             console.error('Authentication check failed:', error);
-            
-            // Try to refresh token once before logging out
+
+            // Token refresh cəhdi (cookie avtomatik göndərilir)
             try {
                 const refreshResp = await window.apiClient.request('/auth/refresh', { method: 'POST' });
-                if (refreshResp && (refreshResp.ok === true || refreshResp.success === true || refreshResp.token)) {
-                    // Save new token if provided
-                    if (refreshResp.token) {
-                        try { localStorage.setItem('auth_token', refreshResp.token); localStorage.setItem('authToken', refreshResp.token); } catch(_) {}
-                    }
-                    // Retry fetching user info
+                if (refreshResp && (refreshResp.ok === true || refreshResp.success === true)) {
                     const retryUser = await window.apiClient.get('auth/me');
                     if (retryUser && retryUser.username) {
-                        localStorage.setItem('currentUser', JSON.stringify(retryUser));
-                        const urlParams = new URLSearchParams(window.location.search);
-                        const tabParam = urlParams.get('tab');
+                        _currentUser = retryUser;
+                        const tabParam = new URLSearchParams(window.location.search).get('tab');
                         switchTab(tabParam || 'dashboard');
                         return true;
                     }
@@ -512,20 +502,14 @@
                 console.warn('Token refresh attempt failed:', re);
             }
 
-            // Auth failed and refresh also failed: clear session and redirect to login
+            // Köhnə token qalıqlarını təmizlə
             try {
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('token');
-                localStorage.removeItem('auth_user');
-                localStorage.removeItem('currentUser');
-                localStorage.removeItem('user');
-                localStorage.removeItem('username');
-                localStorage.removeItem('fullName');
-                localStorage.removeItem('session');
-                localStorage.removeItem('tokenExpiresAt');
+                ['auth_token','authToken','token','auth_user','currentUser','user',
+                 'username','fullName','session','tokenExpiresAt','auth_role'
+                ].forEach(k => { try { localStorage.removeItem(k); } catch(_) {} });
                 sessionStorage.clear();
             } catch(_) {}
+
             if (!isLoginPage) {
                 window.toast && window.toast.warn && window.toast.warn('Sessiya etibarsızdır. Yenidən daxil olun.');
                 setTimeout(() => { window.location.href = 'login.html'; }, 800);
@@ -537,7 +521,7 @@
     // Load users
     async function loadUsers() {
         console.log('Loading users...');
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const currentUser = _currentUser || {};
         const tbody = document.querySelector('#users-table tbody');
         
         // Show loading state
@@ -545,28 +529,8 @@
             tbody.innerHTML = '<tr><td colspan="8" class="text-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Yüklənir...</span></div></td></tr>';
         }
 
-        // If we are in offline-dev mode, show local users
-        const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
-        if (token === 'offline-dev' || window.__API_OFFLINE__ === true) {
-            if (tbody) {
-                // Add superadmin user
-                const superAdminUser = {
-                    id: 1,
-                    username: 'Timur',
-                    fullName: 'Timur Eminli',
-                    phone: '504520055',
-                    role: 'superadmin',
-                    blocked: false,
-                    createdAt: '2024-10-07T00:00:00.000Z' // 07.10.2024
-                };
-                
-                // If current user is not set, use superadmin as default
-                if (!currentUser.username) {
-                    localStorage.setItem('currentUser', JSON.stringify(superAdminUser));
-                }
-                
-                renderUsers([superAdminUser]);
-            }
+        if (window.__API_OFFLINE__ === true) {
+            if (tbody) renderUsers([]);
         }
         
         try {
@@ -639,7 +603,7 @@
         tbody.innerHTML = '';
         
         // Get current user's info and role
-        const currentUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        const currentUser = _currentUser || {};
         const currentUserRole = (currentUser.role || '').toLowerCase();
         const isCurrentUserSuperAdmin = currentUserRole === 'superadmin';
         const isCurrentUserAdminOrSuper = currentUserRole === 'superadmin' || currentUserRole === 'admin';
@@ -804,8 +768,7 @@
             if (!btn) return;
             const uname = btn.getAttribute('data-username');
             if (!uname) return;
-            const token = localStorage.getItem('authToken') || localStorage.getItem('auth_token');
-            if (!token) { alert('Giriş tələb olunur.'); return; }
+            if (!_currentUser) { alert('Giriş tələb olunur.'); return; }
 
             try {
                 // Change password
@@ -1104,11 +1067,9 @@
 
         btn.addEventListener('click', async function() {
             // Düzgün token adı ilə əldə edirik
-            const token = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
-            const myRole = (localStorage.getItem('auth_role') || '').toLowerCase();
-            if (!token) {
-                // inline not possible here; use toast/alert fallback
-                toast?.warn?.('Giriş tələb olunur. Zəhmət olmasa əvvəlcə sistemə daxil olun.');
+            const myRole = (_currentUser?.role || '').toLowerCase();
+            if (!_currentUser) {
+                toast?.warn?.('Giriş tələb olunur.');
                 return;
             }
             if (myRole !== 'superadmin') {
@@ -1227,7 +1188,6 @@
 
                 if (resp.status === 401) {
                     setFieldError(usernameEl, 'Sessiya bitib. Yenidən daxil olun.');
-                    try { localStorage.removeItem('auth_token'); localStorage.removeItem('authToken'); } catch(_) {}
                     return;
                 }
                 if (resp.status === 403) { setFieldError(roleEl, 'Bu əməliyyatı yerinə yetirmək üçün icazəniz yoxdur (403).'); return; }
@@ -1282,9 +1242,9 @@
     // Load user profile data
     async function loadUserProfile() {
         try {
-            const username = localStorage.getItem('username');
+            const username = _currentUser?.username;
             if (!username) {
-                console.error('Username not found in localStorage');
+                console.error('_currentUser not set');
                 return;
             }
 
@@ -1298,40 +1258,19 @@
             if (phoneEl) phoneEl.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Yüklənir...';
             if (lastLoginEl) lastLoginEl.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Yoxlanılır...';
 
-            // Check if user is superadmin
-            const isSuperadmin = (username || '').toLowerCase() === 'superadmin' ||
-                                 (username || '').toLowerCase() === 'admin' ||
-                                 (username || '').toLowerCase() === 'timur';
-            
-            let userData;
-            
-            if (isSuperadmin) {
-                // For superadmin, use hardcoded values
-                userData = {
-                    fullName: 'Super Admin',
-                    phone: '+994 XX XXX XX XX',
-                    role: 'superadmin',
-                    lastLogin: new Date().toLocaleString('az-AZ')
-                };
-                
-                // Update avatar with 'SA' for Super Admin
-                if (userAvatar) {
-                    userAvatar.textContent = 'SA';
-                    userAvatar.style.backgroundColor = '#1976D2';
-                    userAvatar.style.color = 'white';
-                    userAvatar.style.display = 'flex';
-                    userAvatar.style.alignItems = 'center';
-                    userAvatar.style.justifyContent = 'center';
-                    userAvatar.style.fontWeight = 'bold';
-                }
-            } else {
-                // For regular users, try to get from localStorage or use defaults
-                userData = {
-                    fullName: localStorage.getItem('fullName') || 'Ad Soyad',
-                    phone: localStorage.getItem('phone') || '+994 XX XXX XX XX',
-                    role: localStorage.getItem('auth_role') || 'admin',
-                    lastLogin: localStorage.getItem('lastLogin') || new Date().toLocaleString('az-AZ')
-                };
+            // Use _currentUser data (no localStorage)
+            const cu = _currentUser || {};
+            const fullName = [cu.firstName, cu.lastName].filter(Boolean).join(' ') || cu.username || 'İstifadəçi';
+            const userData = {
+                fullName,
+                phone: cu.phoneNumber || '+994 XX XXX XX XX',
+                role: cu.role || 'user',
+                lastLogin: cu.lastLogin ? new Date(cu.lastLogin).toLocaleString('az-AZ') : new Date().toLocaleString('az-AZ')
+            };
+
+            if (userAvatar) {
+                const initials = fullName.trim().split(/\s+/).map(s => s[0]).join('').slice(0, 2).toUpperCase() || 'GT';
+                userAvatar.textContent = initials;
             }
 
             // Update UI with user data
@@ -1343,10 +1282,6 @@
                     <span>${userData.lastLogin}</span>
                 `;
             }
-            
-            // Update last login time
-            const now = new Date().toLocaleString('az-AZ');
-            localStorage.setItem('lastLogin', now);
             
             // Also update the header if needed
             const lastLoginHeaderEl = document.getElementById('last-login-header');
@@ -1373,9 +1308,9 @@
     function initUserAvatar() {
         console.log('Initializing user avatar with profile modal...');
         
-        // Get username from localStorage, fallback to URL params, then to 'Admin'
-        let username = localStorage.getItem('username') || 
-                      new URLSearchParams(window.location.search).get('username') || 
+        // Get username from in-memory user object, fallback to URL params, then 'Admin'
+        let username = _currentUser?.username ||
+                      new URLSearchParams(window.location.search).get('username') ||
                       'Admin';
         
         // Normalize username
@@ -1383,7 +1318,7 @@
         console.log('Current username:', username);
         
         // Check if superadmin
-        const isSuperadmin = username === 'superadmin' || username === 'admin' || username === 'timur';
+        const isSuperadmin = (_currentUser?.role || '').toLowerCase() === 'superadmin';
         console.log('Is superadmin:', isSuperadmin);
         
         // Get all avatar elements
@@ -1399,11 +1334,10 @@
         
         // Update avatar appearance and keep click handler intact
         avatarElements.forEach(el => {
-            // Prefer full name initials or username initials
-            let stored = {};
-            try { stored = JSON.parse(localStorage.getItem('currentUser') || '{}') || {}; } catch(_) {}
-            const firstName = stored.firstName || stored.fullName?.split(' ')[0] || username || '';
-            const lastName = stored.lastName || (stored.fullName?.split(' ')[1] || '');
+            // Use _currentUser (no localStorage)
+            const stored = _currentUser || {};
+            const firstName = stored.firstName || '';
+            const lastName = stored.lastName || '';
             const avatarUrl = stored.avatarUrl || '';
             const initials = (`${(firstName||'').charAt(0)}${(lastName||'').charAt(0)}` || (username||'A').charAt(0)).toUpperCase();
 
@@ -1825,35 +1759,16 @@
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             try {
-                // Try to call the logout API if we have a token
-                const token = localStorage.getItem('auth_token') || localStorage.getItem('authToken');
-                if (token) {
-                    try {
-                        // Use the apiClient if available
-                        if (window.apiClient) {
-                            await window.apiClient.post('auth/logout');
-                        } else {
-                            // Fallback to direct fetch
-                            await fetch(`${API_BASE_URL}/api/auth/logout`, {
-                                method: 'POST',
-                                headers: { 
-                                    'Authorization': `Bearer ${token}`,
-                                    'Content-Type': 'application/json'
-                                },
-                                credentials: 'omit',
-                                mode: 'cors'
-                            });
-                        }
-                    } catch (apiError) {
-                        console.warn('Logout API call failed, but continuing with client-side cleanup', apiError);
-                    }
+                try {
+                    await window.apiClient.post('auth/logout');
+                } catch (apiError) {
+                    console.warn('Logout API call failed, continuing with cleanup', apiError);
+                }
+                {
                 }
             } finally {
-                // Clear all auth data
-                localStorage.removeItem('auth_token');
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('currentUser');
-                localStorage.removeItem('auth_role');
+                // Clear any residual localStorage data (auth is cookie-based)
+                ['auth_token','authToken','currentUser','auth_role','token','user','auth_user','username','fullName','session','tokenExpiresAt'].forEach(k => { try { localStorage.removeItem(k); } catch(_) {} });
                 sessionStorage.clear();
                 
                 // Redirect to login page

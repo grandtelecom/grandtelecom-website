@@ -458,49 +458,21 @@
       // Run health check
       checkBackend();
 
-      // Tokeni yadda saxla
-      function saveAuthData(token, userData, expiresIn, remember) {
-        try {
-          // Bütün köhnə tokenləri təmizlə
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('auth_token');
-          localStorage.removeItem('user');
-          
-          // Yeni tokeni yadda saxla (yalnız bir dəfə)
-          localStorage.setItem('authToken', token);
-          // Uyğunluq üçün snake_case açarı da yazılsın
-          localStorage.setItem('auth_token', token);
-          
-          // İstifadəçi məlumatlarını yadda saxla
-          if (userData) {
-            localStorage.setItem('user', JSON.stringify(userData));
-          }
-          
-          // Tokenin vaxtı çıxma müddətini qeyd et
-          const now = Date.now();
-          // Backend-dən expiresIn gəlirsə ondan istifadə et, gəlmirsə remember-ə görə 30 gün/24 saat
-          const ttl = (typeof expiresIn === 'number' && expiresIn > 0)
-            ? expiresIn
-            : (remember ? (30 * 24 * 60 * 60 * 1000) : (24 * 60 * 60 * 1000));
-          const expiresAt = new Date(now + ttl);
-          localStorage.setItem('tokenExpiresAt', expiresAt.toISOString());
-          
-          console.log('Auth məlumatları yadda saxlanıldı');
-          return true;
-        } catch (error) {
-          console.error('Auth məlumatları yadda saxlanılmadı:', error);
-          return false;
-        }
+      // Auth artıq httpOnly cookie ilə idarə olunur — localStorage token saxlanmır
+      function saveAuthData(_token, _userData, _expiresIn, _remember) {
+        // Köhnə token qalıqlarını təmizlə
+        ['authToken','auth_token','user','tokenExpiresAt',
+         'currentUser','auth_user','username','fullName','auth_role'
+        ].forEach(k => { try { localStorage.removeItem(k); } catch(_) {} });
+        return true;
       }
       
-      // Tokeni yenilə
+      // Tokeni yenilə — httpOnly cookie avtomatik göndərilir
       async function refreshToken() {
         try {
-          const token = localStorage.getItem('authToken');
-          if (!token) return false;
-          
           const response = await fetch(`${CONFIG.API_BASE_URL}/api/auth/refresh`, {
             method: 'POST',
+            credentials: 'include',
             headers: {
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
@@ -586,12 +558,8 @@
                   lastLogin: new Date().toISOString()
                 };
                 try {
-                  localStorage.setItem('authToken', data.token);
-                  localStorage.setItem('auth_token', data.token);
-                  localStorage.setItem('currentUser', JSON.stringify(userData));
-                  localStorage.setItem('auth_user', JSON.stringify(userData));
-                  localStorage.setItem('username', userData.username);
-                  localStorage.setItem('fullName', [userData.firstName, userData.lastName].filter(Boolean).join(' ').trim());
+                  // Token httpOnly cookie-dədir — localStorage-a yazılmır
+                  saveAuthData();
                 } catch(_) {}
                 window.location.href = 'admin-panel.html';
                 return;
