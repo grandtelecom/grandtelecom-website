@@ -1386,7 +1386,11 @@
                         },
                         isValid: function(){
                             var token = this.getToken();
-                            if (!token) return false;
+                            if (!token) {
+                                // httpOnly cookie auth — localStorage token yoxdur, amma session cookie mövcuddur
+                                // Server auth-u enforce edir; burada premature logout etməyək
+                                return document.cookie.indexOf('csrf_token=') !== -1;
+                            }
                             // If JWT, check exp; if parse fails, gracefully fall back
                             if (token.split('.').length === 3) {
                                 try {
